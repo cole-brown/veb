@@ -1,0 +1,229 @@
+#+SEQ_TODO: todo started waiting done
+#+ARCHIVE: ::* archive
+
+--------------------------------------------------------------------------------
+                           Verified (Simple) Backups
+--------------------------------------------------------------------------------
+   Yeah, yeah... "vsb", not "veb". But I'm a sucker for psuedo-word commands.
+
+http://www.gnu.org/software/emacs/manual/html_node/org/Clocking-work-time.html
+
+* Time
+
+*** Total
+
+#+BEGIN: clocktable :maxlevel 3 :scope file 
+Clock summary at [2012-05-09 Wed 00:34].
+
+| L | Headline                                       | Time   |      |
+|---+------------------------------------------------+--------+------|
+|   | *Total time*                                   | *2:40* |      |
+|---+------------------------------------------------+--------+------|
+| 1 | TASKS                                          | 2:40   |      |
+| 2 | done 000: Go setup                             |        | 0:13 |
+| 2 | done 001: walk dir tree, print out             |        | 1:07 |
+| 2 | done 002: SHA-256 vs SHA1                      |        | 1:00 |
+| 2 | done 003: Hash file, print out result/time/etc |        | 0:20 |
+#+END
+
+*** Today
+
+#+BEGIN: clocktable :maxlevel 3 :scope file :block today
+Clock summary at [2012-05-09 Wed 17:20].  Considered range is /today/.
+
+| L | Headline                                       | Time   |      |
+|---+------------------------------------------------+--------+------|
+|   | *Total time*                                   | *3:05* |      |
+|---+------------------------------------------------+--------+------|
+| 1 | TASKS                                          | 3:05   |      |
+| 2 | done 003: Hash file, print out result/time/etc |        | 0:20 |
+| 2 | done 004: walk & hash                          |        | 1:51 |
+| 2 | 007: meta-file format                          |        | 0:54 |
+#+END:
+
+* CMDs
+
+making tree of files from text file w/ filenames in it...
+  find . -type f -iname > path/to/walkfiles.txt
+  cat ../../../walkfiles.txt | perl -p -e "s/\n/\0/;" > ../../../walknull.txt
+  cat ../../../walkdirnull.txt | xargs -0 mkdir -p
+  cat ../../../walknull.txt | xargs -0 -I{} sh -c 'echo $1 > $1.txt' -- {}
+  TODO: Make these 2-3 MB files of random data...
+
+randomed files...
+  http://linuxcommando.blogspot.com/2008/06/create-file-of-given-size-with-random.html
+  - but OSX doesn't like "1M"...
+    dd if=/dev/urandom of=test/data/hash/rand2mb.bin bs=1048576 count=2
+
+few random files w/ checksum file
+  for f in `seq 1 15`; do dd if=/dev/urandom of=rand_${f}.bin bs=1048576 count=2; done
+  for f in `seq 1 15`; do shasum -a1 rand_${f}.bin ; done > ../../verification/short-walk-files.txt
+  shasum -a1 --check ../../verification/short-walk-files.txt
+
+* users.txt
+
+* Costs
+
+* TODOs
+*** todo line numbers (linum) in Go-mode buffers
+*** todo Is fill-column not default 80 in my dotfiles?!
+*** done install HG for go-get
+    closed: [2012-05-08 Tue 15:47]
+  - install from MacPorts
+*** done update Xcode for MacPorts for HG
+    closed: [2012-05-08 Tue 15:28]
+* TASKS
+*** done 000: Go setup
+    closed: [2012-05-08 Tue 22:43]
+    clock: [2012-05-08 Tue 15:56]--[2012-05-08 Tue 16:09] =>  0:13
+
+  - GOPATH, dir structure, etc.
+    - ignore pkg & bin dirs in git
+
+*** done 001: walk dir tree, print out
+    closed: [2012-05-08 Tue 22:48]
+    :CLOCK:
+    clock: [2012-05-08 Tue 22:38]--[2012-05-08 Tue 22:48] =>  0:10
+    clock: [2012-05-08 Tue 16:09]--[2012-05-08 Tue 17:06] =>  0:57
+    :END:
+
+  - make test tree w/ tons o' files.
+    - print out some of files in iTunes lib, use to make mostly empty files of same layout.
+      - make sure it uses the crazy letters (eg Folie À Deux), not just ACII.
+
+*** done 002: SHA-256 vs SHA1
+    closed: [2012-05-08 Tue 23:50]
+    clock: [2012-05-08 Tue 22:49]--[2012-05-08 Tue 23:49] =>  1:00
+
+shasum for initial stab...
+
+SHA 1:
+  - 893M file (935905255 bytes)
+  - 0m52.194s real time as per `time shasum -pa 1 SCOTT_PILGRIM.m4v`
+  - 17.1006017 MBps
+
+SHA 1 (take 2):
+  palladium:Movies spydez$ ls -lh unwatched/MOVIE_2.iso 
+  -rw-r--r--@ 1 spydez  staff   7.9G May  2 15:23 unwatched/MOVIE_2.iso
+  palladium:Movies spydez$ ls -l unwatched/MOVIE_2.iso 
+  -rw-r--r--@ 1 spydez  staff  8465022976 May  2 15:23 unwatched/MOVIE_2.iso
+  palladium:Movies spydez$ time shasum -pa 1 unwatched/MOVIE_2.iso
+  e453b6e10aff36ce5dca0506366ac9b4ee1e3f3e ?unwatched/MOVIE_2.iso
+  
+  real	4m14.084s (+ (* 4 60) 14.084) 254.084 sec
+  user	0m34.527s
+  sys	0m16.014s
+
+SHA 256:
+  palladium:Movies spydez$ ls -lh unwatched/MOVIE_1.iso
+  -rw-r--r--@ 1 spydez  staff   7.9G May  2 15:15 unwatched/MOVIE_1.iso
+  palladium:Movies spydez$ ls -l unwatched/MOVIE_1.iso
+  -rw-r--r--@ 1 spydez  staff  8533966848 May  2 15:15 unwatched/MOVIE_1.iso
+  palladium:Movies spydez$ time shasum -pa 256 unwatched/MOVIE_1.iso
+  b2a525dde826e301177b78479d26367d2da8252a36eb83109d7477f62fa2416f ?unwatched/MOVIE_1.iso
+  
+  real	10m53.673s (+ (* 10 60) 53.673) 653.673 sec
+  user	1m18.879s
+  sys	0m14.157s
+
+SHA 1  : 31.772465 MBps
+SHA 256: 12.450606 MBps
+
+And now... the easier way.
+  http://www.cryptopp.com/benchmarks.html
+  SHA-1 is faster.
+    - 53 sec vs 82 sec for 8.9 GB file
+
+CONCLUSION: Use SHA-1, since speed is more important than security
+  - But possibly make hashes user choosable in case someone hates SHA-1 
+
+*** done 003: Hash file, print out result/time/etc
+    closed: [2012-05-09 Wed 00:32]
+    clock: [2012-05-09 Wed 00:12]--[2012-05-09 Wed 00:32] =>  0:20
+
+  That was pretty easy...
+
+*** done 004: walk & hash
+    closed: [2012-05-09 Wed 16:09]
+    :CLOCK:
+    clock: [2012-05-09 Wed 14:30]--[2012-05-09 Wed 16:09] =>  1:39
+    clock: [2012-05-09 Wed 00:48]--[2012-05-09 Wed 01:00] =>  0:12
+    :END:
+
+Made some rand files & checksummed them. (CMDs -> few random)
+
+Steps:
+ - [X] Make walk & hash non-main
+ - [X] Make lil' veb its very own main.
+
+*** todo 005: time stuff
+
+*** todo 006: goroutines
+  - launcher script to set Go with the right number of procs?
+  - time walk w/ goroutines vs single-thread
+
+*** done 007: meta-file format
+    closed: [2012-05-09 Wed 17:29]
+    :CLOCK:
+    clock: [2012-05-09 Wed 16:27]--[2012-05-09 Wed 17:28] =>  1:01
+    clock: [2012-05-09 Wed 16:19]--[2012-05-09 Wed 16:26] =>  0:07
+  - See git's. They know wtf they're doing.
+    - http://git-scm.com/book/en/Git-Internals
+      :END:
+  - how git determines if a file's modified:
+    - http://www-cs-students.stanford.edu/~blynn/gitmagic/ch08.html#_indexing
+
+possibly use shasum's checkfile method for the xsums instead of git tree object's
+  - and then something like the git index for checking modifications
+
+So 2 meta-files.
+  - .veb/index -- file info for quickly finding new/deleted/modified files
+  - .veb/xsums -- checksums of all known files.
+
+*** started 008: index file
+
+Go os.FileInfo gives:
+  Name() string       // base name of the file
+  Size() int64        // length in bytes for regular files; system-dependent for others
+  Mode() FileMode     // file mode bits
+  ModTime() time.Time // modification time
+  http://golang.org/pkg/os/#FileInfo
+
+So use just those for now. Git index has a ton more, but this is simpler 
+and the above should do. http://git.rsbx.net/Documents/Git_Data_Formats.txt
+
+Will need full (relative) path instead of just basename to avoid same-named files
+...like my "project.org" files.
+
+Since this is mostly to learn Go, will be using the gob pkg to write file info out/read back in.
+  - http://golang.org/pkg/encoding/gob/
+
+*** todo 009: xsums file
+
+ use shasum's checkfile format for the xsums
+
+*** 999: future features
+  - better multi-point syncing?
+    - eg:
+      - desktop changes x.mp3
+      - desktop backs up to NAS
+      - laptop changes same x.mp3 (in a different manner... different song metadata or something)
+      - laptop backs up to NAS
+        - veb notifies user that a modified x.mp3 exists both on laptop and NAS
+          and asks which is desired.
+    - may involve version controlling the veb meta-files and using git to figure that out.
+      - "Hm... x.mp3 changed. Git! Do source and dest have previous file hases in common?"
+  - rsync option
+    - for when the backup isn't on the same computer or local network...
+  - choice of hash functions on init
+    - SHA1. SHA256. MD5 for the speed freaks...
+
+* SLOC
+  - Cheesy version
+    $ wc -l `find . -iname "*.go"`
+    ...
+       43710 total
+
+# Local Variables: 
+# fill-column:80
+# End: 
