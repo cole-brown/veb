@@ -6,6 +6,9 @@
 --------------------------------------------------------------------------------
    Yeah, yeah... "vsb", not "veb". But I'm a sucker for psuedo-word commands.
 
+enough for two 82-width buffers
+(set-frame-size (selected-frame) 170 69)
+
 http://www.gnu.org/software/emacs/manual/html_node/org/Clocking-work-time.html
 
 * Time
@@ -66,7 +69,11 @@ few random files w/ checksum file
 
 * TODOs
 *** todo line numbers (linum) in Go-mode buffers
-*** todo Is fill-column not default 80 in my dotfiles?!
+*** done Is fill-column not default 80 in my dotfiles?!
+    closed: [2012-05-15 Tue 19:16]
+
+Looks like it is... *shrugs*
+
 *** done install HG for go-get
     closed: [2012-05-08 Tue 15:47]
   - install from MacPorts
@@ -181,6 +188,15 @@ So 2 meta-files.
   - .veb/xsums -- checksums of all known files.
 
 *** started 008: index file
+    :CLOCK:
+    clock: [2012-05-17 Thu 23:15]
+    clock: [2012-05-17 Thu 20:20]--[2012-05-17 Thu 22:57] =>  2:37
+    clock: [2012-05-17 Thu 16:45]--[2012-05-17 Thu 16:53] =>  0:08
+    clock: [2012-05-16 Wed 21:19]--[2012-05-17 Thu 01:00] =>  3:41
+    clock: [2012-05-16 Wed 20:09]--[2012-05-16 Wed 21:18] =>  1:09
+    clock: [2012-05-16 Wed 17:25]--[2012-05-16 Wed 19:07] =>  1:42
+    clock: [2012-05-15 Tue 19:00]--[2012-05-15 Tue 19:51] =>  0:51
+    :END:
 
 Go os.FileInfo gives:
   Name() string       // base name of the file
@@ -198,11 +214,71 @@ Will need full (relative) path instead of just basename to avoid same-named file
 Since this is mostly to learn Go, will be using the gob pkg to write file info out/read back in.
   - http://golang.org/pkg/encoding/gob/
 
+TODOTODOTODO
+ - TODO [1/5]
+   - [ ] Make add() function for adding new files to Index
+     - make checkWalker() use it.
+   - [ ] remove addWalker()
+   - [ ] remove build()
+   - [ ] test index.go!
+   - [X] implement Export()? Or is that for 009:xsums?
+     - Xsums.
+
 *** todo 009: xsums file
 
- use shasum's checkfile format for the xsums
+use shasum's checkfile format for the xsums
+  - or add to index?
+    - or both...
+
+TODOTODOTODO
+ - TODO [0/1]
+   - [ ] implement Export() for sending xsums out to shasum-formatted file.
+
+*** started 010: log
+
+Use Go log pkg to log stuff.
+  - Is there a way to tee the logs to stderr and a log file?
+    - I think I saw a MultiWriter somewhere...
+
+It's in index.go
+
+*** started 011: parallize
+    :CLOCK:
+    clock: [2012-05-17 Thu 16:06]--[2012-05-17 Thu 16:45] =>  0:39
+    clock: [2012-05-17 Thu 15:36]--[2012-05-17 Thu 16:02] =>  0:26
+    clock: [2012-05-16 Wed 21:51]--[2012-05-16 Wed 22:08] =>  0:17
+    :END:
+
+http://golang.org/doc/effective_go.html#parallel
+
+straight walk vs goroutined walk?
+  - filepath.Walk itself is serial, so no big benefits can be gained
+
+serial walk: 32 ms for 2752 files (3076 files & folders)
+  - think we'll be fine for now.
+
+*** 012: nice
+Can we make go run nice'd, or low priority?
+
+*** 013: commands
+veb init
+  - make .veb dir and files, doesn't really do anything
+  - git init
+veb status
+  - checks what's changed/new, doesn't do anything
+  - git status
+veb commit
+  - copies files to backup location
+veb remote
+  - changes backup location
+  - silimalish to git remote
+veb verify
+  - runs xsum on all files, warns when stuff's different but not modified.
+  - need a "quit" command for early exiting.
 
 *** 999: future features
+  - parallelized walk
+    - make walk only current dir, spawn subdirs off as separate goroutines
   - better multi-point syncing?
     - eg:
       - desktop changes x.mp3
