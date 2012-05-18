@@ -189,7 +189,8 @@ So 2 meta-files.
 
 *** started 008: index file
     :CLOCK:
-    clock: [2012-05-17 Thu 23:15]
+    clock: [2012-05-18 Fri 16:20]--[2012-05-18 Fri 16:37] =>  0:17
+    clock: [2012-05-17 Thu 23:15]--[2012-05-17 Thu 23:40] =>  0:25
     clock: [2012-05-17 Thu 20:20]--[2012-05-17 Thu 22:57] =>  2:37
     clock: [2012-05-17 Thu 16:45]--[2012-05-17 Thu 16:53] =>  0:08
     clock: [2012-05-16 Wed 21:19]--[2012-05-17 Thu 01:00] =>  3:41
@@ -215,11 +216,12 @@ Since this is mostly to learn Go, will be using the gob pkg to write file info o
   - http://golang.org/pkg/encoding/gob/
 
 TODOTODOTODO
- - TODO [1/5]
-   - [ ] Make add() function for adding new files to Index
-     - make checkWalker() use it.
-   - [ ] remove addWalker()
-   - [ ] remove build()
+ - TODO [4/5]
+   - [X] Make add() function for adding new files to Index
+     - make checkWalker() use it?
+       - No... add new things to Index after they're backed up.
+   - [X] remove addWalker()
+   - [X] remove build()
    - [ ] test index.go!
    - [X] implement Export()? Or is that for 009:xsums?
      - Xsums.
@@ -257,10 +259,27 @@ straight walk vs goroutined walk?
 serial walk: 32 ms for 2752 files (3076 files & folders)
   - think we'll be fine for now.
 
-*** 012: nice
+*** started 012: bash scripts for testing [3/5]
+    :CLOCK:
+    clock: [2012-05-18 Fri 17:10]--[2012-05-18 Fri 17:53] =>  0:43
+    clock: [2012-05-18 Fri 16:37]--[2012-05-18 Fri 17:10] =>  0:33
+    :END:
+
+  - [X] script to clean up test area
+    - something simple should do, like: rm -rf test/scratch
+
+  - [X] script to make small tree
+  - [X] script to modify something in small tree
+  - [ ] script to just bump mtime (touch)?
+
+  - [ ] script to make full tree
+  - [ ] script to modify things in small tree
+  - [ ] script to just bump mtime (touch)?
+
+*** 999: nice
 Can we make go run nice'd, or low priority?
 
-*** 013: commands
+*** 999: commands
 veb init
   - make .veb dir and files, doesn't really do anything
   - git init

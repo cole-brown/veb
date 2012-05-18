@@ -73,43 +73,43 @@ func main() {
 	//		fmt.Println("\nError'd!", err)
 	//	}
 
-	vi := make(map[string]IndexEntry)
-	vr := "/foo/bar"
-	vl := log.New(os.Stderr, "veb: ", log.LstdFlags|log.Lshortfile)
-	veb := Index{vi, vr, 0, vl}
-
-	fmt.Println(os.Getwd())
-	root := "test/data/index-simple"
-	os.Chdir(root)
-	root = "."
-
-	err := veb.build(root)
-	if err != nil {
-		fmt.Println("\nError'd!", err)
-	}
-	fmt.Println(len(veb.Files))
-	//	fmt.Println(veb)
-
-	c := make(chan string, 10)
-	err = veb.Check(root, c)
-	if err != nil {
-		fmt.Println("\nError'd!", err)
-	}
-	for i := 0; i < len(c); i++ {
-		fmt.Println(<-c)
-	}
-
-	err = veb.Save()
-	if err != nil {
-		fmt.Println("\nError'd!", err)
-	}
-
-	veb2, err := Load(vl)
-	if err != nil {
-		fmt.Println("\nError'd!", err)
-	}
-	fmt.Println(veb)
-	fmt.Println(veb2)
+//	vi := make(map[string]IndexEntry)
+//	vr := "/foo/bar"
+//	vl := log.New(os.Stderr, "veb: ", log.LstdFlags|log.Lshortfile)
+//	veb := Index{vi, vr, 0, vl}
+//
+//	fmt.Println(os.Getwd())
+//	root := "test/data/index-simple"
+//	os.Chdir(root)
+//	root = "."
+//
+//	err := veb.build(root)
+//	if err != nil {
+//		fmt.Println("\nError'd!", err)
+//	}
+//	fmt.Println(len(veb.Files))
+//	//	fmt.Println(veb)
+//
+//	c := make(chan string, 10)
+//	err = veb.Check(root, c)
+//	if err != nil {
+//		fmt.Println("\nError'd!", err)
+//	}
+//	for i := 0; i < len(c); i++ {
+//		fmt.Println(<-c)
+//	}
+//
+//	err = veb.Save()
+//	if err != nil {
+//		fmt.Println("\nError'd!", err)
+//	}
+//
+//	veb2, err := Load(vl)
+//	if err != nil {
+//		fmt.Println("\nError'd!", err)
+//	}
+//	fmt.Println(veb)
+//	fmt.Println(veb2)
 }
 
 // Creates a new, empty, Index
@@ -187,55 +187,23 @@ func (x Index) Check(root string, changed chan string) error {
 	return err
 }
 
-// Takes an empty Index and fills it with files found from a recursive 
-// walk starting at root.
-func (x Index) build(root string) error {
-	if len(x.Files) != 0 {
-		es := "veb index build: non-empty index"
-		x.log.Println(es)
-		return errors.New(es)
-	}
-
-	err := filepath.Walk(root, x.addWalker())
+// File has been delt with; update xsum and file stats in Index
+func (x Index) Update(filepath string, xsum []bytes) error {
+	// get file's size & such
+	info, err := os.Lstat(filepath)
 	if err != nil {
 		x.log.Println(err)
-	}
-	return err
-}
-
-// Returns a closure that implements filepath.WalkFn
-// addWalker's closure adds files encountered to the index
-func (x Index) addWalker() func(path string, info os.FileInfo, err error) error {
-	return func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			// ignoring errors so we can continue if possible
-			x.log.Println(err)
-			return nil
-		}
-
-		// ignore veb metadata folders
-		if info.IsDir() && info.Name() == META_FOLDER {
-			return filepath.SkipDir
-		}
-
-		// only files for now.
-		// TODO: Possibly also grab symlinks later
-		if info.Mode()&os.ModeType != 0 {
-			return nil // ignore
-		}
-
-		// add to index
-		// Leave out hash/xsum. Not index's responsibility.
-		x.Files[path] = IndexEntry{
-			path,
-			[]byte{}, // empty xsum
-			info.Name(),
-			info.Size(),
-			info.Mode(),
-			info.ModTime()}
-
 		return err
 	}
+
+	// Add/Update entry in Index
+	x.Files[path] = IndexEntry{
+		filepath,
+		xsum,
+		info.Name(),
+		info.Size(),
+		info.Mode(),
+		info.ModTime()}	
 }
 
 // Returns a closure that implements filepath.WalkFn
@@ -279,4 +247,3 @@ func (x Index) checkWalker(changed chan string) func(path string, info os.FileIn
 //    - time, etc
 //  - non-main!
 //  - unit test!
-//  - better errors!
