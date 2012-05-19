@@ -16,17 +16,22 @@ http://www.gnu.org/software/emacs/manual/html_node/org/Clocking-work-time.html
 *** Total
 
 #+BEGIN: clocktable :maxlevel 3 :scope file 
-Clock summary at [2012-05-09 Wed 00:34].
+Clock summary at [2012-05-18 Fri 18:08].
 
-| L | Headline                                       | Time   |      |
-|---+------------------------------------------------+--------+------|
-|   | *Total time*                                   | *2:40* |      |
-|---+------------------------------------------------+--------+------|
-| 1 | TASKS                                          | 2:40   |      |
-| 2 | done 000: Go setup                             |        | 0:13 |
-| 2 | done 001: walk dir tree, print out             |        | 1:07 |
-| 2 | done 002: SHA-256 vs SHA1                      |        | 1:00 |
-| 2 | done 003: Hash file, print out result/time/etc |        | 0:20 |
+| L | Headline                                       | Time    |       |
+|---+------------------------------------------------+---------+-------|
+|   | *Total time*                                   | *19:07* |       |
+|---+------------------------------------------------+---------+-------|
+| 1 | TASKS                                          | 19:07   |       |
+| 2 | done 000: Go setup                             |         |  0:13 |
+| 2 | done 001: walk dir tree, print out             |         |  1:07 |
+| 2 | done 002: SHA-256 vs SHA1                      |         |  1:00 |
+| 2 | done 003: Hash file, print out result/time/etc |         |  0:20 |
+| 2 | done 004: walk & hash                          |         |  1:51 |
+| 2 | done 007: meta-file format                     |         |  1:08 |
+| 2 | started 008: index file                        |         | 10:50 |
+| 2 | started 011: parallize                         |         |  1:22 |
+| 2 | started 012: bash scripts for testing [3/5]    |         |  1:16 |
 #+END
 
 *** Today
@@ -45,6 +50,8 @@ Clock summary at [2012-05-09 Wed 17:20].  Considered range is /today/.
 #+END:
 
 * CMDs
+
+some stuff in test/scripts
 
 making tree of files from text file w/ filenames in it...
   find . -type f -iname > path/to/walkfiles.txt
@@ -187,7 +194,7 @@ So 2 meta-files.
   - .veb/index -- file info for quickly finding new/deleted/modified files
   - .veb/xsums -- checksums of all known files.
 
-*** started 008: index file
+*** waiting 008: index file
     :CLOCK:
     clock: [2012-05-18 Fri 16:20]--[2012-05-18 Fri 16:37] =>  0:17
     clock: [2012-05-17 Thu 23:15]--[2012-05-17 Thu 23:40] =>  0:25
@@ -227,6 +234,7 @@ TODOTODOTODO
      - Xsums.
 
 *** todo 009: xsums file
+    clock: [2012-05-18 Fri 17:54]--[2012-05-18 Fri 19:24] =>  1:30
 
 use shasum's checkfile format for the xsums
   - or add to index?
@@ -275,6 +283,9 @@ serial walk: 32 ms for 2752 files (3076 files & folders)
   - [ ] script to make full tree
   - [ ] script to modify things in small tree
   - [ ] script to just bump mtime (touch)?
+
+*** 013: !!! use channels of IndexEntries
+  - so everything can be sent together, and won't have to restat files or anything
 
 *** 999: nice
 Can we make go run nice'd, or low priority?

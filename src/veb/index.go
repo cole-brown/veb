@@ -1,15 +1,18 @@
-// TODO: package doc
-// Meta-file stuff!
-// Index.go does not compute file checksums.
+// Index maintains an index of files & file info. It can Save() and Load() this
+// index to & from the index file in the veb metadata directory.
+//
+// Main function of interest is Check() which quickly checks the directories for
+// new/modified files. Once these files have been processed, Update() needs to be 
+// called to update the Index with their new checksums and file info.
+//
+// Index is not responsible for checksumming files, and does compute xsusm
+// to determine if a file's changed. It looks at file stats instead.
 
-// TODO: package veb/index
-package main
+package veb
 
 import (
 	"crypto"
 	"encoding/gob"
-	"errors"
-	"fmt"
 	"log"
 	"os"
 	"path"
@@ -44,7 +47,8 @@ type IndexEntry struct {
 	ModTime time.Time   // modification time
 }
 
-func main() {
+// TODO remove
+func oldmain() {
 	//	testfile := "test/data/hash/rand2mb.bin"
 	//	testindex := "test/data/hash/index.veb"
 	//
@@ -113,9 +117,9 @@ func main() {
 }
 
 // Creates a new, empty, Index
-func New(root, remote string, hash crypto.Hash, log *log.Logger) *Index {
+func New(remote string, hash crypto.Hash, log *log.Logger) *Index {
 	ret := Index{make(map[string]IndexEntry), remote, hash, log}
-	return ret
+	return &ret
 }
 
 // Reads the index in from the index file, decodes with gob into new Index
@@ -184,26 +188,29 @@ func (x Index) Check(root string, changed chan string) error {
 	if err != nil {
 		x.log.Println(err)
 	}
+	close(changed)
 	return err
 }
 
 // File has been delt with; update xsum and file stats in Index
-func (x Index) Update(filepath string, xsum []bytes) error {
+func (x Index) Update(fileloc string, xsum []byte) error {
 	// get file's size & such
-	info, err := os.Lstat(filepath)
+	info, err := os.Lstat(fileloc)
 	if err != nil {
 		x.log.Println(err)
 		return err
 	}
 
 	// Add/Update entry in Index
-	x.Files[path] = IndexEntry{
-		filepath,
+	x.Files[fileloc] = IndexEntry{
+		fileloc,
 		xsum,
 		info.Name(),
 		info.Size(),
 		info.Mode(),
 		info.ModTime()}	
+
+	return nil
 }
 
 // Returns a closure that implements filepath.WalkFn

@@ -15,9 +15,9 @@ import (
 func Xsum(path string, info os.FileInfo, err error) error {// ([]byte, error) {
 	// only files for now.
 	// TODO: Possibly also grab symlinks later
-	if info.Mode() & os.ModeType != 0 {
-		return nil // ignore
-	}
+//	if info.Mode() & os.ModeType != 0 {
+//		return nil // ignore
+//	}
 
 	hasher := sha1.New()
 
