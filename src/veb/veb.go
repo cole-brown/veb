@@ -475,7 +475,7 @@ func Verify(logs *veb.Logs) error {
 			//  - will need a 'print changes' func.
 			//  - ERROR!!!!1~! when something's xsum is different but stats are the same
 			//  - WARN probably when stats are different but xsum's the same?
-			fmt.Println(f)
+			fmt.Println("file:", f.Path)
 
 			// fallthrough to print status line
 			fmt.Printf("\n")
@@ -493,6 +493,10 @@ func Verify(logs *veb.Logs) error {
 	return nil
 }
 
+// TODO
+// remove this
+// it's for testing
+// it just saves the current xsum/status of everything to the index
 func TestCommit(logs *veb.Logs) error {
 	logs.Info.Println(IN_FUNC, "test-commit")
 	var timer veb.Timer
