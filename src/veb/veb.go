@@ -6,6 +6,7 @@
 package main
 
 import (
+	"bytes"
 	"crypto"
 	"flag"
 	"fmt"
@@ -14,7 +15,6 @@ import (
 	"path"
 	"runtime"
 	"time"
-	"bytes"
 	"veb"
 )
 
@@ -97,7 +97,7 @@ func main() {
 	// define flags
 	// TODO
 	//  - max CPUs
-  //  - verbose
+	//  - verbose
 
 	// parse flags & args
 	flag.Parse()
@@ -137,6 +137,13 @@ func main() {
 
 	case VERIFY:
 		err := Verify(logs)
+		if err != nil {
+			out.Fatal(err)
+		}
+
+	// TODO - this is just for testing. remove later
+	case "test-commit":
+		err := TestCommit(logs)
 		if err != nil {
 			out.Fatal(err)
 		}
@@ -418,7 +425,7 @@ func Verify(logs *veb.Logs) error {
 	// print intro
 	fmt.Println("veb repository at", dir, "\n")
 	fmt.Println("Verifying file checksums against those stored in veb index...")
-  fmt.Println("Note: new files (as shown by 'veb status') will not be checked.\n")
+	fmt.Println("Note: new files (as shown by 'veb status') will not be checked.\n")
 
 	// toss everything in index into input channel
 	files := make(chan veb.IndexEntry, CHAN_SIZE)
@@ -450,18 +457,24 @@ func Verify(logs *veb.Logs) error {
 		select {
 		case <-quit:
 			// We're done! Either by finishing or user interrupt.
+			// TODO
+			// print outro
+
+			// info logs
 			timer.Stop()
 			logs.Info.Println(OUT_FUNC, VERIFY)
 			logs.Info.Printf("%s (%d ok, %d changed, %d not checked) took %v\n",
 				VERIFY, 0, 0, 0, timer.Duration()) // TODO: stats in there instead of zeros
 			return nil
 
-		case f := <- changed:
+		case f := <-changed:
 			// clear status line w/ carriage return & 80 spaces
 			fmt.Println("\r                                                                                ")
 
 			// TODO
 			//  - will need a 'print changes' func.
+			//  - ERROR!!!!1~! when something's xsum is different but stats are the same
+			//  - WARN probably when stats are different but xsum's the same?
 			fmt.Println(f)
 
 			// fallthrough to print status line
@@ -479,6 +492,71 @@ func Verify(logs *veb.Logs) error {
 	// never should get here
 	return nil
 }
+
+func TestCommit(logs *veb.Logs) error {
+	logs.Info.Println(IN_FUNC, "test-commit")
+	var timer veb.Timer
+	timer.Start()
+
+	// find veb repo
+	dir, err := cdBaseDir(logs)
+	if err != nil {
+		return err
+	}
+	fmt.Println("veb repository at", dir, "\n")
+
+	// load the index
+	index, err := veb.Load(logs)
+	if err != nil {
+		return fmt.Errorf("veb could not load index")
+	}
+
+	// check for changes
+	files := make(chan veb.IndexEntry, CHAN_SIZE)
+	go index.Check(".", files, false)
+	
+	// start handler pool working on files
+	updates := make(chan veb.IndexEntry, CHAN_SIZE)
+	done := make(chan int, maxHandlers)
+	for i := 0; i < maxHandlers; i++ {
+		go func() {
+			for f := range files {
+				// calculate checksum hash
+				err = veb.Xsum(&f, logs)
+				if err != nil {
+					logs.Err.Println("checksum for verify failed:", err)
+				}
+				
+				updates <- f
+			}
+			done <- 1
+		}()
+	}
+
+	// done listener
+	go func() {
+		for i := 0; i < maxHandlers; i++ {
+			<-done
+		}
+		close(updates)
+	}()
+
+	// update index
+	for f := range updates {
+		index.Update(&f)
+	}
+
+	// save index once everything's done
+	index.Save()
+
+	// info logs
+	timer.Stop()
+	logs.Info.Println(OUT_FUNC, "test-commit")
+	logs.Info.Printf("%s took %v\n",
+		"test-commit", timer.Duration())
+	return nil
+}
+
 
 // finds veb META_FOLDER and changes to that directory's parent
 // returns: 
@@ -545,7 +623,7 @@ func verifyHandler(files, changed chan veb.IndexEntry, done chan int, logs *veb.
 
 		// see if it changed...
 		if !bytes.Equal(f.Xsum, oldXsum) {
-			changed <- f			
+			changed <- f
 		}
 	}
 	done <- 1

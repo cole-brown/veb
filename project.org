@@ -563,8 +563,27 @@ summary: 45 new, 0 changed
 info  >> 2012/05/19 18:59:08 veb.go:331: END status
 info  >> 2012/05/19 18:59:08 veb.go:333: status (45 new, 0 changed) took 3.161ms
 
-***** verify
-      clock: [2012-05-20 Sun 14:04]
+******* actual output (nothing to do)
+palladium:local spydez$ go run ../../../src/veb/veb.go status
+info  >> 2012/05/20 17:03:34 veb.go:252: START status
+veb repository at /Users/spydez/sourcepan/veb/test/scratch/local 
+
+No changes or new files.
+
+summary: 0 new, 0 changed
+info  >> 2012/05/20 17:03:34 veb.go:387: END status
+info  >> 2012/05/20 17:03:34 veb.go:389: status (0 new, 0 changed) took 1.802ms
+
+***** waiting verify [1/2]
+      :CLOCK:
+      clock: [2012-05-20 Sun 17:05]
+      clock: [2012-05-20 Sun 14:04]--[2012-05-20 Sun 16:32] =>  2:28
+      :END:
+TODO
+  - [ ] stats for status line & exit info log
+  - [X] need 'veb push' or some other means of saving index.
+    - verifying nothing (empty index) is pretty bland.
+    - Made test-commit.
 
   - runs xsum on all files, warns when stuff's different but not modified.
   - need a "quit" command for early exiting.
@@ -588,6 +607,14 @@ DESIRED VEB STATUS OUTPUT:
         - current  SHA1: e58c8e3e4cd756d8b7716b022ece9181b1fd52da
     
   scanned:   400 of 56780 files (1 changed file) (type 'q' to quit): _
+
+***** done commit
+      closed: [2012-05-20 Sun 17:03]
+      clock: [2012-05-20 Sun 16:49]--[2012-05-20 Sun 17:03] =>  0:14
+
+debug command. For testin'.
+
+Probably not 'veb commit'. Maybe 'veb test-commit'.
 
 ***** fix
 for getting a good version of a corrupted file from the remote
