@@ -282,6 +282,7 @@ TODOTODOTODO
 Use Go log pkg to log stuff.
   - Is there a way to tee the logs to stderr and a log file?
     - I think I saw a MultiWriter somewhere...
+      - http://golang.org/pkg/io/#MultiWriter
 
  - [X] index.go
  - [X] checksum.go
@@ -310,11 +311,13 @@ straight walk vs goroutined walk?
 serial walk: 32 ms for 2752 files (3076 files & folders)
   - think we'll be fine for now.
 
-*** started 012: bash scripts for testing [3/5]
+*** started 012: bash scripts for testing [4/8]
     :CLOCK:
     clock: [2012-05-18 Fri 17:10]--[2012-05-18 Fri 17:53] =>  0:43
     clock: [2012-05-18 Fri 16:37]--[2012-05-18 Fri 17:10] =>  0:33
     :END:
+
+  - [X] make scripts create in scratch/local or scratch/remote instead of just scratch
 
   - [X] script to clean up test area
     - something simple should do, like: rm -rf test/scratch
@@ -561,8 +564,30 @@ info  >> 2012/05/19 18:59:08 veb.go:331: END status
 info  >> 2012/05/19 18:59:08 veb.go:333: status (45 new, 0 changed) took 3.161ms
 
 ***** verify
+      clock: [2012-05-20 Sun 14:04]
+
   - runs xsum on all files, warns when stuff's different but not modified.
   - need a "quit" command for early exiting.
+
+Firstly, do the quit early part.
+
+DESIRED VEB STATUS OUTPUT:
+  palladium:scratch spydez$ veb verify
+  veb repository at /path/to/here
+
+  Verifying file checksums against those stored in veb index...
+  Note: new files (as shown by 'veb status') will not be checked.
+
+  --------------
+  Changed files:
+  --------------
+    foo/bar/baz.bin
+        - filesize increased 400 bytes (90.3MB -> 90.3MB)
+        - modified on (2012-05-19 16:11:05)
+        - previous SHA1: 79bac1510de7be376f89715635f7be51b006c59a
+        - current  SHA1: e58c8e3e4cd756d8b7716b022ece9181b1fd52da
+    
+  scanned:   400 of 56780 files (1 changed file) (type 'q' to quit): _
 
 ***** fix
 for getting a good version of a corrupted file from the remote

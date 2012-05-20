@@ -14,12 +14,8 @@ import (
 	"path"
 	"runtime"
 	"time"
+	"bytes"
 	"veb"
-
-//	"runtime"
-//	"path/filepath"
-//	"crypto"
-//	"time"
 )
 
 const (
@@ -34,6 +30,10 @@ const (
 	VERIFY = "verify"
 	REMOTE = "remote"
 
+	// misc
+	QUIT_RUNE = 'q'
+	CHAN_SIZE = 1000
+
 	// debug help
 	// TODO: move to Logs?
 	IN_FUNC  = "START"
@@ -43,6 +43,10 @@ const (
 	META_FOLDER = ".veb"
 	INDEX_FILE  = "index" // inside of META_FOLDER only
 	XSUMS_FILE  = "xsums" // inside of META_FOLDER only
+)
+
+var (
+	maxHandlers int
 )
 
 // pretty print filesizes
@@ -92,9 +96,22 @@ func main() {
 
 	// define flags
 	// TODO
+	//  - max CPUs
+  //  - verbose
 
 	// parse flags & args
 	flag.Parse()
+
+	// setup goroutine parallization
+	// cuz it just runs on one processor out of the box...
+	// TODO: is running on all procs a good idea? (will it starve the system?)
+	NUM_CPUS := runtime.NumCPU()
+	runtime.GOMAXPROCS(NUM_CPUS)
+	maxHandlers = NUM_CPUS
+	if NUM_CPUS > 4 {
+		// TODO: this needed? Or will running at a nice priority be sufficient?
+		maxHandlers /= 2
+	}
 
 	// sanity check
 	if len(flag.Args()) == 0 {
@@ -118,6 +135,12 @@ func main() {
 			out.Fatal(err)
 		}
 
+	case VERIFY:
+		err := Verify(logs)
+		if err != nil {
+			out.Fatal(err)
+		}
+
 	case FIX:
 		// TODO: implement
 		out.Fatal("this command is not yet implemented")
@@ -128,9 +151,6 @@ func main() {
 		// TODO: implement
 		out.Fatal("this command is not yet implemented")
 	case SYNC:
-		// TODO: implement
-		out.Fatal("this command is not yet implemented")
-	case VERIFY:
 		// TODO: implement
 		out.Fatal("this command is not yet implemented")
 	case REMOTE:
@@ -226,40 +246,10 @@ func Status(logs *veb.Logs) error {
 	var timer veb.Timer
 	timer.Start()
 
-	// TODO: move this to own function cdBase(), or something
-	// search down the present working dir for META_FOLDER && cd there
-	MAX_PARENTS := 15
-	pwd, err := os.Getwd()
+	// find veb repo
+	dir, err := cdBaseDir(logs)
 	if err != nil {
-		logs.Err.Println(err)
-		return fmt.Errorf("veb could not figure out where it is: %v", err)
-	}
-	dir := pwd
-	found := false
-	for i := 0; i < MAX_PARENTS; i++ {
-		// check current
-		fi, err := os.Stat(path.Join(dir, META_FOLDER))
-		if err != nil {
-			// If the dir doesn't exist, fine.
-			// Log other errors.
-			if !os.IsNotExist(err) {
-				logs.Err.Println(err)
-				return fmt.Errorf("veb could not find %v metafolder: %v", META_FOLDER, err)
-			}
-		} else if fi.IsDir() {
-			// dir is now at base directory
-			found = true
-			os.Chdir(dir)
-			break
-		}
-
-		// if not found, check parent dir next time
-		dir = path.Dir(dir)
-	}
-	if !found {
-		logs.Err.Println("veb could not find", META_FOLDER, "metafolder")
-		return fmt.Errorf("veb could not find %v metafolder at or %v folders below: %v",
-			META_FOLDER, MAX_PARENTS, pwd)
+		return err
 	}
 
 	// load the index
@@ -268,21 +258,9 @@ func Status(logs *veb.Logs) error {
 		return fmt.Errorf("veb could not load index")
 	}
 
-	// setup goroutine parallization
-	// cuz it just runs on one processor out of the box...
-	// TODO: is running on all procs a good idea? (will it starve the system?)
-	// TODO: move elsewhere
-	NUM_CPUS := runtime.NumCPU()
-	runtime.GOMAXPROCS(NUM_CPUS)
-	CHAN_SIZE := 1000
-	maxHandlers := NUM_CPUS
-	if NUM_CPUS > 4 {
-		maxHandlers /= 2
-	}
-
 	// check for changes
 	files := make(chan veb.IndexEntry, CHAN_SIZE)
-	go index.Check(".", files)
+	go index.Check(".", files, false)
 
 	// parse into new vs changed
 	newFiles := make([]string, 0)
@@ -393,8 +371,8 @@ func Status(logs *veb.Logs) error {
 		fmt.Println("No changes or new files.")
 	} else {
 		fmt.Println("MAKE SURE CHANGED FILES ARE THINGS YOU'VE ACTUALLY CHANGED")
-		fmt.Println("  (use \"veb fix <file>\" if a file has been corrupted in this repository)")
-		fmt.Println("  (use \"veb push\", \"veb pull\", or \"veb sync\" to commit changed/new files)")
+		fmt.Println("  (use 'veb fix <file>' if a file has been corrupted in this repository)")
+		fmt.Println("  (use 'veb push', 'veb pull', or 'veb sync' to commit changed/new files)")
 	}
 	fmt.Printf("\nsummary: %d new, %d changed\n", len(newFiles), len(changedFiles))
 
@@ -403,4 +381,172 @@ func Status(logs *veb.Logs) error {
 	logs.Info.Printf("%s (%d new, %d changed) took %v\n",
 		STATUS, len(newFiles), len(changedFiles), timer.Duration())
 	return nil
+}
+
+// Runs every file in index through hashing algorithm and compares the result
+// against the xsum saved in the index.
+// Does not verify new files.
+func Verify(logs *veb.Logs) error {
+	logs.Info.Println(IN_FUNC, VERIFY)
+	var timer veb.Timer
+	timer.Start()
+
+	// find veb repo
+	dir, err := cdBaseDir(logs)
+	if err != nil {
+		return err
+	}
+
+	// load the index
+	index, err := veb.Load(logs)
+	if err != nil {
+		return fmt.Errorf("veb could not load index")
+	}
+
+	// start listener for user's quit signal
+	quit := make(chan int)
+	go func() {
+		for {
+			var input string
+			fmt.Scan(&input)
+			if input[0] == QUIT_RUNE {
+				quit <- 1
+			}
+		}
+	}()
+
+	// print intro
+	fmt.Println("veb repository at", dir, "\n")
+	fmt.Println("Verifying file checksums against those stored in veb index...")
+  fmt.Println("Note: new files (as shown by 'veb status') will not be checked.\n")
+
+	// toss everything in index into input channel
+	files := make(chan veb.IndexEntry, CHAN_SIZE)
+	go func() {
+		for _, f := range index.Files {
+			files <- f
+		}
+		close(files)
+	}()
+
+	// start handler pool working on checking files
+	changed := make(chan veb.IndexEntry, CHAN_SIZE)
+	done := make(chan int, maxHandlers)
+	for i := 0; i < maxHandlers; i++ {
+		go verifyHandler(files, changed, done, logs)
+	}
+
+	// done listener signals quit when all handlers are done
+	go func() {
+		for i := 0; i < maxHandlers; i++ {
+			<-done
+		}
+		close(changed)
+		quit <- 1
+	}()
+
+	for {
+		i := 0 // TODO testing...
+		select {
+		case <-quit:
+			// We're done! Either by finishing or user interrupt.
+			timer.Stop()
+			logs.Info.Println(OUT_FUNC, VERIFY)
+			logs.Info.Printf("%s (%d ok, %d changed, %d not checked) took %v\n",
+				VERIFY, 0, 0, 0, timer.Duration()) // TODO: stats in there instead of zeros
+			return nil
+
+		case f := <- changed:
+			// clear status line w/ carriage return & 80 spaces
+			fmt.Println("\r                                                                                ")
+
+			// TODO
+			//  - will need a 'print changes' func.
+			fmt.Println(f)
+
+			// fallthrough to print status line
+			fmt.Printf("\n")
+			// TODO: actual status line
+			i++
+			fmt.Printf("\r%4d: ", i)
+		default:
+			// TODO: actual status line
+			i++
+			fmt.Printf("\r%4d: ", i)
+		}
+	}
+
+	// never should get here
+	return nil
+}
+
+// finds veb META_FOLDER and changes to that directory's parent
+// returns: 
+//   (dir cd'd to, nil) on success
+//   ("", err) on error
+func cdBaseDir(logs *veb.Logs) (string, error) {
+	const MAX_PARENTS = 15
+	pwd, err := os.Getwd()
+	if err != nil {
+		logs.Err.Println(err)
+		return "", fmt.Errorf("veb could not figure out where it is: %v", err)
+	}
+
+	// search down the present working dir for META_FOLDER && cd there
+	dir := pwd
+	found := false
+	for i := 0; i < MAX_PARENTS; i++ {
+		// check current
+		fi, err := os.Stat(path.Join(dir, META_FOLDER))
+		if err != nil {
+			// If the dir doesn't exist, fine.
+			// Log other errors.
+			if !os.IsNotExist(err) {
+				logs.Err.Println(err)
+				return "", fmt.Errorf("veb could not find %v metafolder: %v", META_FOLDER, err)
+			}
+		} else if fi.IsDir() {
+			// dir is now at base directory
+			found = true
+			os.Chdir(dir)
+			break
+		}
+
+		// if not found, check parent dir next time
+		dir = path.Dir(dir)
+	}
+
+	if !found {
+		logs.Err.Println("veb could not find", META_FOLDER, "metafolder")
+		return "", fmt.Errorf("veb could not find %v metafolder at or %v folders below: %v",
+			META_FOLDER, MAX_PARENTS, pwd)
+	}
+
+	return dir, nil
+}
+
+// calculates checksum and saves file stats
+func verifyHandler(files, changed chan veb.IndexEntry, done chan int, logs *veb.Logs) {
+	for f := range files {
+		// save off old xsum for comparison
+		oldXsum := f.Xsum
+
+		// get file size & such
+		err := veb.SetStats(&f)
+		if err != nil {
+			logs.Err.Println("couldn't get stats:", err)
+		}
+
+		// calculate checksum hash
+		err = veb.Xsum(&f, logs)
+		if err != nil {
+			logs.Err.Println("checksum for verify failed:", err)
+		}
+
+		// see if it changed...
+		if !bytes.Equal(f.Xsum, oldXsum) {
+			changed <- f			
+		}
+	}
+	done <- 1
 }

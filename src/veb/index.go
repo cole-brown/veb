@@ -180,10 +180,12 @@ func (x *Index) Save() error {
 }
 
 // Checks file stats against stats in the index; does not recompute checksum.
+// modOnly == true will return only modified files (no new files)
 // If file differs, returns false. 
 // If file does not exist in Index, returns false with an IndexError.
-func (x Index) Check(root string, changed chan IndexEntry) error {
-	err := filepath.Walk(root, x.checkWalker(changed))
+// TODO: am I using modOnly anywhere?
+func (x Index) Check(root string, changed chan IndexEntry, modOnly bool) error {
+	err := filepath.Walk(root, x.checkWalker(changed, modOnly))
 
 	if err != nil {
 		x.logs.Err.Println(err)
@@ -192,12 +194,11 @@ func (x Index) Check(root string, changed chan IndexEntry) error {
 	return err
 }
 
-// File has been delt with; update xsum and file stats in Index
-func (x Index) Update(entry IndexEntry) error {
+// Get file stats and save to entry
+func SetStats(entry *IndexEntry) error {
 	// get file's size & such
 	info, err := os.Lstat(entry.Path)
 	if err != nil {
-		x.logs.Err.Println(err)
 		return err
 	}
 
@@ -207,15 +208,26 @@ func (x Index) Update(entry IndexEntry) error {
 	entry.Mode    = info.Mode()
 	entry.ModTime = info.ModTime()
 
+	return nil
+}
+
+// File has been delt with; update xsum and file stats in Index
+func (x Index) Update(entry *IndexEntry) error {
+	err := SetStats(entry)
+	if err != nil {
+		x.logs.Err.Println(err)
+		return err
+	}
+
 	// Add/Update entry in Index
-	x.Files[entry.Path] = entry
+	x.Files[entry.Path] = *entry
 
 	return nil
 }
 
 // Returns a closure that implements filepath.WalkFn
 // checkWalker's closure checks files encountered against those in the index
-func (x Index) checkWalker(changed chan IndexEntry) func(path string, info os.FileInfo, err error) error {
+func (x Index) checkWalker(changed chan IndexEntry, modOnly bool) func(path string, info os.FileInfo, err error) error {
 	return func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			// ignoring errors so we can continue if possible
@@ -235,15 +247,20 @@ func (x Index) checkWalker(changed chan IndexEntry) func(path string, info os.Fi
 		}
 
 		// compare current file stats against index's stats
-		// TODO: also compare mode?
-		if file, ok := x.Files[path]; !ok ||
-			file.Size != info.Size() ||
-			file.ModTime != info.ModTime() {
-			// file differs or is not in index
-			// add to index (no stats, so if cancelled early, it will show up as 
-			// new/modified next time
+		file, ok := x.Files[path]
+		if !ok {
+			// not in index (new file)
+			// add to index (w/ no stats)
 			x.Files[path] = IndexEntry{Path: path}
-			
+
+			// add to channel for processing
+			if !modOnly {
+				changed <- x.Files[path]
+			}
+		} else if file.Size != info.Size() ||
+			file.ModTime != info.ModTime() {
+			// TODO: also compare mode?
+			// modified file
 			// add to channel for processing
 			changed <- x.Files[path]
 		}

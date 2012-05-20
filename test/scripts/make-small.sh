@@ -6,10 +6,10 @@ DATA_DIR="bar"
 
 # try to figure out where we're running from, then delete contents of scratch dir
 if [ -d "test/scratch" ]; then
-  SCRATCH_DIR="test/scratch"
+  SCRATCH_DIR="test/scratch/local"
   DATA_DIR="test/data"
 elif [ -d "../scratch" ]; then
-  SCRATCH_DIR="../scratch"
+  SCRATCH_DIR="../scratch/local"
   DATA_DIR="../data"
 else
   echo -e "Don't know where test dirs are."

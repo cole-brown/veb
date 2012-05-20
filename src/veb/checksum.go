@@ -5,7 +5,6 @@ package veb
 import (
 	"io"
 	"os"
-	"log"
 	"crypto/sha1"
 	// TODO: these hashes
 	//	"crypto/sha256"
@@ -13,27 +12,26 @@ import (
 //	"fmt"
 )
 
-func Xsum(entry IndexEntry, updates chan IndexEntry, log *log.Logger) error {
+func Xsum(entry *IndexEntry, logs *Logs) error {
 	// TODO: make hasher from supplied crypto.Hash
 	// - crypto.Available(), crypto.New()
 	hasher := sha1.New()
 
 	file, err := os.Open(entry.Path)
 	if err != nil {
-		log.Println(err)
+		logs.Err.Println(err)
 		return err
 	}
 	defer file.Close()
 
 	_, err = io.Copy(hasher, file)
 	if err != nil {
-		log.Println(err)
+		logs.Err.Println(err)
 		return err
 	}
 	// TODO: check file size to make sure all read?
 
 	entry.Xsum = hasher.Sum(nil)
-	updates <- entry
 
 //	fmt.Printf("%x  %s\n", hasher.Sum(nil), entry.Path)
 	
