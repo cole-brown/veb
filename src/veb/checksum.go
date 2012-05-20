@@ -5,30 +5,38 @@ package veb
 import (
 	"io"
 	"os"
+	"log"
 	"crypto/sha1"
 	// TODO: these hashes
 	//	"crypto/sha256"
 	//	"crypto/md5"
-	"fmt"
+//	"fmt"
 )
 
-func Xsum(path string, info os.FileInfo, err error) error {// ([]byte, error) {
-	// only files for now.
-	// TODO: Possibly also grab symlinks later
-//	if info.Mode() & os.ModeType != 0 {
-//		return nil // ignore
-//	}
-
+func Xsum(entry IndexEntry, updates chan IndexEntry, log *log.Logger) error {
+	// TODO: make hasher from supplied crypto.Hash
+	// - crypto.Available(), crypto.New()
 	hasher := sha1.New()
 
-	file, err := os.Open(path)
-	if err == nil {
-		_, err = io.Copy(hasher, file)
-		// TODO: check file size to make sure all read?
-		fmt.Printf("%x  %s\n", hasher.Sum(nil), path)
+	file, err := os.Open(entry.Path)
+	if err != nil {
+		log.Println(err)
+		return err
 	}
+	defer file.Close()
+
+	_, err = io.Copy(hasher, file)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	// TODO: check file size to make sure all read?
+
+	entry.Xsum = hasher.Sum(nil)
+	updates <- entry
+
+//	fmt.Printf("%x  %s\n", hasher.Sum(nil), entry.Path)
 	
-//	return hasher.Sum(nil), err
 	return err
 }
 

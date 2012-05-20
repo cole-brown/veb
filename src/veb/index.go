@@ -13,7 +13,6 @@ package veb
 import (
 	"crypto"
 	"encoding/gob"
-	"log"
 	"os"
 	"path"
 	"path/filepath"
@@ -31,10 +30,11 @@ type Index struct {
 	Files  map[string]IndexEntry
 	Remote string      // absolute path to backup location root
 	Hash   crypto.Hash // hash function used. 0 = not yet hashed
-	log    *log.Logger // error logging
+	logs   *Logs       // error/warn/info logging
 }
 
 // A veb index entry/value
+// TODO: rename to just Entry
 type IndexEntry struct {
 	Path string // filepath, same as the entry's key in the Index map
 	Xsum []byte // checksum of file
@@ -117,17 +117,17 @@ func oldmain() {
 }
 
 // Creates a new, empty, Index
-func New(remote string, hash crypto.Hash, log *log.Logger) *Index {
-	ret := Index{make(map[string]IndexEntry), remote, hash, log}
+func New(remote string, hash crypto.Hash, logs *Logs) *Index {
+	ret := Index{make(map[string]IndexEntry), remote, hash, logs}
 	return &ret
 }
 
 // Reads the index in from the index file, decodes with gob into new Index
-func Load(log *log.Logger) (*Index, error) {
+func Load(logs *Logs) (*Index, error) {
 	// open index file
 	file, err := os.Open(path.Join(META_FOLDER, INDEX_FILE))
 	if err != nil {
-		log.Println(err)
+		logs.Err.Println(err)
 		return nil, err
 	}
 	defer file.Close() // make sure to close that file
@@ -137,12 +137,12 @@ func Load(log *log.Logger) (*Index, error) {
 	dec := gob.NewDecoder(file)
 	err = dec.Decode(&ret)
 	if err != nil {
-		log.Println("couldn't load index:", err)
+		logs.Err.Println("couldn't load index:", err)
 		return nil, err
 	}
 
 	// Attach the logger
-	ret.log = log
+	ret.logs = logs
 
 	return &ret, nil
 }
@@ -154,7 +154,7 @@ func (x *Index) Save() error {
 	err := os.Rename(path.Join(META_FOLDER, INDEX_FILE),
 		path.Join(META_FOLDER, INDEX_FILE+"~"))
 	if err != nil {
-		x.log.Println("could not backup old index:", err)
+		x.logs.Warn.Println("could not backup old index:", err)
 		// Don't return error. Only errors if index doesn't exist, which is fine
 		// becaus we're about to save a new one.
 	}
@@ -163,7 +163,7 @@ func (x *Index) Save() error {
 	// overwrites if already exists
 	file, err := os.Create(path.Join(META_FOLDER, INDEX_FILE))
 	if err != nil {
-		x.log.Println(err)
+		x.logs.Err.Println(err)
 		return err
 	}
 	defer file.Close() // make sure to close that file
@@ -172,7 +172,7 @@ func (x *Index) Save() error {
 	enc := gob.NewEncoder(file)
 	err = enc.Encode(x)
 	if err != nil {
-		x.log.Println("couldn't save index:", err)
+		x.logs.Err.Println("couldn't save index:", err)
 		return err
 	}
 
@@ -182,44 +182,44 @@ func (x *Index) Save() error {
 // Checks file stats against stats in the index; does not recompute checksum.
 // If file differs, returns false. 
 // If file does not exist in Index, returns false with an IndexError.
-func (x Index) Check(root string, changed chan string) error {
+func (x Index) Check(root string, changed chan IndexEntry) error {
 	err := filepath.Walk(root, x.checkWalker(changed))
 
 	if err != nil {
-		x.log.Println(err)
+		x.logs.Err.Println(err)
 	}
 	close(changed)
 	return err
 }
 
 // File has been delt with; update xsum and file stats in Index
-func (x Index) Update(fileloc string, xsum []byte) error {
+func (x Index) Update(entry IndexEntry) error {
 	// get file's size & such
-	info, err := os.Lstat(fileloc)
+	info, err := os.Lstat(entry.Path)
 	if err != nil {
-		x.log.Println(err)
+		x.logs.Err.Println(err)
 		return err
 	}
 
+	// update entry fields (xsum, path already done)
+	entry.Name    = info.Name()
+	entry.Size    = info.Size()
+	entry.Mode    = info.Mode()
+	entry.ModTime = info.ModTime()
+
 	// Add/Update entry in Index
-	x.Files[fileloc] = IndexEntry{
-		fileloc,
-		xsum,
-		info.Name(),
-		info.Size(),
-		info.Mode(),
-		info.ModTime()}	
+	x.Files[entry.Path] = entry
 
 	return nil
 }
 
 // Returns a closure that implements filepath.WalkFn
 // checkWalker's closure checks files encountered against those in the index
-func (x Index) checkWalker(changed chan string) func(path string, info os.FileInfo, err error) error {
+func (x Index) checkWalker(changed chan IndexEntry) func(path string, info os.FileInfo, err error) error {
 	return func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			// ignoring errors so we can continue if possible
-			x.log.Println(err)
+			x.logs.Err.Println(err)
 			return nil
 		}
 
@@ -240,8 +240,12 @@ func (x Index) checkWalker(changed chan string) func(path string, info os.FileIn
 			file.Size != info.Size() ||
 			file.ModTime != info.ModTime() {
 			// file differs or is not in index
+			// add to index (no stats, so if cancelled early, it will show up as 
+			// new/modified next time
+			x.Files[path] = IndexEntry{Path: path}
+			
 			// add to channel for processing
-			changed <- path
+			changed <- x.Files[path]
 		}
 
 		return err

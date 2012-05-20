@@ -11,6 +11,21 @@ enough for two 82-width buffers
 
 http://www.gnu.org/software/emacs/manual/html_node/org/Clocking-work-time.html
 
+* Mysteries of Go
+Don't have two mains inside a package.
+
+A main of veb.go in package veb works. A main of cmd.go in package veb gives
+bullshit mystery errors.
+    palladium:veb spydez$ go run src/veb/cmd.go 
+    # veb
+    src/veb/checksum.go:16: undefined: IndexEntry
+  - there is nothing wrong with checksum, and this proves it:
+    mv src/veb/cmd.go src/veb/veb.go
+    go run src/veb/veb.go
+    ((normal, expected output from running main))
+
+"xsum.go" is a no-no? It worked as hash.go, didn't as xsum.go, and does as checksum.go.
+
 * Time
 
 *** Total
@@ -37,21 +52,27 @@ Clock summary at [2012-05-18 Fri 18:08].
 *** Today
 
 #+BEGIN: clocktable :maxlevel 3 :scope file :block today
-Clock summary at [2012-05-09 Wed 17:20].  Considered range is /today/.
+Clock summary at [2012-05-19 Sat 19:23].  Considered range is /today/.
 
-| L | Headline                                       | Time   |      |
-|---+------------------------------------------------+--------+------|
-|   | *Total time*                                   | *3:05* |      |
-|---+------------------------------------------------+--------+------|
-| 1 | TASKS                                          | 3:05   |      |
-| 2 | done 003: Hash file, print out result/time/etc |        | 0:20 |
-| 2 | done 004: walk & hash                          |        | 1:51 |
-| 2 | 007: meta-file format                          |        | 0:54 |
+| L | Headline                    | Time   |      |      |
+|---+-----------------------------+--------+------+------|
+|   | *Total time*                | *5:11* |      |      |
+|---+-----------------------------+--------+------+------|
+| 1 | TASKS                       | 5:11   |      |      |
+| 2 | started 009: xsums file     |        | 0:24 |      |
+| 2 | started 010: log [3/4]      |        | 0:19 |      |
+| 2 | started 014: commands [0/1] |        | 4:28 |      |
+| 3 | done init                   |        |      | 1:08 |
+| 3 | done status                 |        |      | 3:20 |
 #+END:
 
 * CMDs
 
 some stuff in test/scripts
+
+Check that veb is finding all files:
+  - obviously veb needs to print out only file names
+  (go run src/veb/veb.go && find test/scratch -type f | sed "s,test/scratch/,,g") | sort | uniq -c
 
 making tree of files from text file w/ filenames in it...
   find . -type f -iname > path/to/walkfiles.txt
@@ -170,9 +191,14 @@ Steps:
  - [X] Make walk & hash non-main
  - [X] Make lil' veb its very own main.
 
-*** todo 005: time stuff
+*** done 005: time stuff
+    closed: [2012-05-18 Fri 19:57]
+    clock: [2012-05-18 Fri 19:42]--[2012-05-18 Fri 19:57] =>  0:15
 
-*** todo 006: goroutines
+    timer.go done!
+
+*** done 006: goroutines
+    closed: [2012-05-18 Fri 19:41]
   - launcher script to set Go with the right number of procs?
   - time walk w/ goroutines vs single-thread
 
@@ -233,8 +259,12 @@ TODOTODOTODO
    - [X] implement Export()? Or is that for 009:xsums?
      - Xsums.
 
-*** todo 009: xsums file
+*** started 009: xsums file
+    :CLOCK:
+    clock: [2012-05-19 Sat 01:39]--[2012-05-19 Sat 02:03] =>  0:24
+    clock: [2012-05-18 Fri 19:30]--[2012-05-18 Fri 19:41] =>  0:11
     clock: [2012-05-18 Fri 17:54]--[2012-05-18 Fri 19:24] =>  1:30
+    :END:
 
 use shasum's checkfile format for the xsums
   - or add to index?
@@ -243,14 +273,27 @@ use shasum's checkfile format for the xsums
 TODOTODOTODO
  - TODO [0/1]
    - [ ] implement Export() for sending xsums out to shasum-formatted file.
+     - ...I'm thinking this should go back in Index. :/
+       - maybe have the formatter in Xsum.
 
-*** started 010: log
+*** started 010: log [3/4]
+    clock: [2012-05-19 Sat 15:42]--[2012-05-19 Sat 16:01] =>  0:19
 
 Use Go log pkg to log stuff.
   - Is there a way to tee the logs to stderr and a log file?
     - I think I saw a MultiWriter somewhere...
 
-It's in index.go
+ - [X] index.go
+ - [X] checksum.go
+ - [X] veb.go (commands)
+ - [ ] 
+
+Log levels?
+  - struct w/ 3 logs
+    - error
+    - warning
+    - info
+ - Yes.
 
 *** started 011: parallize
     :CLOCK:
@@ -284,27 +327,269 @@ serial walk: 32 ms for 2752 files (3076 files & folders)
   - [ ] script to modify things in small tree
   - [ ] script to just bump mtime (touch)?
 
-*** 013: !!! use channels of IndexEntries
+*** done 013: !!! use channels of IndexEntries
+    closed: [2012-05-19 Sat 02:09]
   - so everything can be sent together, and won't have to restat files or anything
+
+*** started 014: commands [0/1]
+
+ - [ ] move commands out of main package so veb can be integrated into other things?
+   - Doubt it ever will... but might as well.
+ - [ ] test 'veb status' with changed files
+   - and changed & new files
+
+***** done init
+      closed: [2012-05-19 Sat 15:40]
+    :CLOCK:
+    clock: [2012-05-19 Sat 14:09]--[2012-05-19 Sat 14:28] =>  0:19
+    clock: [2012-05-19 Sat 02:07]--[2012-05-19 Sat 02:56] =>  0:49
+    :END:
+
+  - make .veb dir and files, doesn't really do anything
+  - git init
+
+***** done status
+      closed: [2012-05-19 Sat 19:20]
+      clock: [2012-05-19 Sat 16:00]--[2012-05-19 Sat 19:20] =>  3:20
+
+  - checks what's changed/new, doesn't do anything
+  - git status
+
+GIT STATUS OUTPUT:
+  palladium:scratch spydez$ git status
+  # On branch master
+  # Changes to be committed:
+  #   (use "git reset HEAD <file>..." to unstage)
+  #
+  #	renamed:    ../../src/veb/veb.go -> ../../src/testing-stuff/veb.go
+  #
+  # Changes not staged for commit:
+  #   (use "git add <file>..." to update what will be committed)
+  #   (use "git checkout -- <file>..." to discard changes in working directory)
+  #
+  #	modified:   ../../project.org
+  #	modified:   ../../src/testing-stuff/veb.go
+  #	modified:   ../../src/veb/checksum.go
+  #	modified:   ../../src/veb/index.go
+  #
+  # Untracked files:
+  #   (use "git add <file>..." to include in what will be committed)
+  #
+  #	../../src/testing-stuff/cmd.go
+  #	../../src/veb/logs.go
+  #	../../src/veb/timer.go
+  #	../../src/veb/veb.go
+
+DESIRED VEB STATUS OUTPUT:
+  palladium:scratch spydez$ veb status
+  veb repository at /path/to/here
+
+  --------------
+  Changed files:
+  --------------
+    foo/bar/baz.bin
+        - filesize increased 400 bytes (90.3MB -> 90.3MB)
+        - modified on (2012-05-19 16:11:05)
+
+    foo/quux.mp3  
+        - modification time only (2012-05-19 16:11:05)
+
+    
+  ----------
+  New files:
+  ----------
+    xyzzy.iso  
+        - 8.9GB, modified on (2012-05-19 16:11:05)
+
+    firefly.m4v
+        - 80MB, modified on (2012-05-19 16:11:05)
+
+  MAKE SURE CHANGED FILES ARE THINGS YOU'VE ACTUALLY CHANGED
+    (use "veb fix <file>" if a file has been corrupted in this repository)
+    (use "veb push", "veb pull", or "veb sync" to commit changed/new files)
+
+******* actual output (all new; no changed files)
+palladium:scratch spydez$ go run ../../src/veb/veb.go status
+info  >> 2012/05/19 18:59:08 veb.go:155: START status
+veb repository at /Users/spydez/sourcepan/veb/test/scratch 
+
+----------
+New files:
+----------
+  .DS_Store
+      - 12.00KB, modified on (2012-05-18 17:47:19 -0500 CDT)
+
+  311/.DS_Store
+      - 6.00KB, modified on (2012-05-18 17:47:14 -0500 CDT)
+
+  311/Don't Tread On Me/01 Don't Tread On Me.test.bin
+      - 2.00MB, modified on (2012-05-18 17:47:04 -0500 CDT)
+
+  311/Don't Tread On Me/02 Thank Your Lucky Stars.test.bin
+      - 2.00MB, modified on (2012-05-18 17:47:04 -0500 CDT)
+
+  311/Don't Tread On Me/09 Whiskey & Wine.test.bin
+      - 2.00MB, modified on (2012-05-18 17:47:04 -0500 CDT)
+
+  311/Don't Tread On Me/10 It's Getting OK Now.test.bin
+      - 2.00MB, modified on (2012-05-18 17:47:04 -0500 CDT)
+
+  311/Don't Tread On Me/11 There's Always An Excuse.test.bin
+      - 2.00MB, modified on (2012-05-18 17:47:04 -0500 CDT)
+
+  Ace Troubleshooter/.DS_Store
+      - 6.00KB, modified on (2012-05-18 17:47:14 -0500 CDT)
+
+  Ace Troubleshooter/It's Never Enough/01 Ball & Chain.test.bin
+      - 2.00MB, modified on (2012-05-18 17:47:04 -0500 CDT)
+
+  Ace Troubleshooter/It's Never Enough/02 Anything.test.bin
+      - 2.00MB, modified on (2012-05-18 17:47:05 -0500 CDT)
+
+  Apt° Core/.DS_Store
+      - 6.00KB, modified on (2012-05-18 17:47:14 -0500 CDT)
+
+  Apt° Core/2/01 No Such Thing As Time.test.bin
+      - 2.00MB, modified on (2012-05-18 17:47:05 -0500 CDT)
+
+  Fall Out Boy/.DS_Store
+      - 6.00KB, modified on (2012-05-18 17:47:09 -0500 CDT)
+
+  Fall Out Boy/Folie À Deux/01 Disloyal Order Of Water Buffaloes.test.bin
+      - 2.00MB, modified on (2012-05-18 17:53:11 -0500 CDT)
+
+  Fall Out Boy/Folie À Deux/02 I Don't Care.test.bin
+      - 2.00MB, modified on (2012-05-18 17:53:11 -0500 CDT)
+
+  Fall Out Boy/Folie À Deux/03 She's My Winona.test.bin
+      - 2.00MB, modified on (2012-05-18 17:47:05 -0500 CDT)
+
+  Fall Out Boy/Folie À Deux/04 America's Suitehearts.test.bin
+      - 2.00MB, modified on (2012-05-18 17:47:05 -0500 CDT)
+
+  Fall Out Boy/Folie À Deux/05 Headfirst Slide Into Cooperstown On A Bad Bet.test.bin
+      - 2.00MB, modified on (2012-05-18 17:47:06 -0500 CDT)
+
+  Five Iron Frenzy/.DS_Store
+      - 6.00KB, modified on (2012-05-18 17:47:14 -0500 CDT)
+
+  Five Iron Frenzy/Our Newest Album Ever!/01 Handbook for the Sellout.test.bin
+      - 2.00MB, modified on (2012-05-18 17:53:11 -0500 CDT)
+
+  Five Iron Frenzy/Our Newest Album Ever!/02 Where is Micah_.test.bin
+      - 2.00MB, modified on (2012-05-18 17:47:06 -0500 CDT)
+
+  Five Iron Frenzy/Our Newest Album Ever!/11 Oh, Canada.test.bin
+      - 2.00MB, modified on (2012-05-18 17:47:06 -0500 CDT)
+
+  Five Iron Frenzy/Our Newest Album Ever!/12 Most Likely to Succeed.test.bin
+      - 2.00MB, modified on (2012-05-18 17:47:06 -0500 CDT)
+
+  Five Iron Frenzy/Our Newest Album Ever!/13 Every New Day.test.bin
+      - 2.00MB, modified on (2012-05-18 17:47:06 -0500 CDT)
+
+  Movits!/.DS_Store
+      - 6.00KB, modified on (2012-05-18 17:47:09 -0500 CDT)
+
+  Movits!/Äppelknyckarjazz/01 Ta på dig dansskorna.test.bin
+      - 2.00MB, modified on (2012-05-18 17:53:11 -0500 CDT)
+
+  Movits!/Äppelknyckarjazz/03 Swing för hyresgästföreningen.test.bin
+      - 2.00MB, modified on (2012-05-18 17:47:07 -0500 CDT)
+
+  Movits!/Äppelknyckarjazz/04 Fast tvärtom.test.bin
+      - 2.00MB, modified on (2012-05-18 17:47:07 -0500 CDT)
+
+  Movits!/Äppelknyckarjazz/06 Fel del av gården.test.bin
+      - 2.00MB, modified on (2012-05-18 17:47:07 -0500 CDT)
+
+  Movits!/Äppelknyckarjazz/08 Tom Jones.test.bin
+      - 2.00MB, modified on (2012-05-18 17:47:07 -0500 CDT)
+
+  Movits!/Äppelknyckarjazz/09 Äppelknyckarjazz.test.bin
+      - 2.00MB, modified on (2012-05-18 17:47:07 -0500 CDT)
+
+  Movits!/Äppelknyckarjazz/10 Stick iväg Jack del II.test.bin
+      - 2.00MB, modified on (2012-05-18 17:47:07 -0500 CDT)
+
+  Movits!/Äppelknyckarjazz/11 2 dollar på fickan.test.bin
+      - 2.00MB, modified on (2012-05-18 17:47:08 -0500 CDT)
+
+  Parov Stelar/.DS_Store
+      - 6.00KB, modified on (2012-05-18 17:47:19 -0500 CDT)
+
+  Parov Stelar/Coco Pt.1/01 Coco (Featuring Lilja Bloom).test.bin
+      - 2.00MB, modified on (2012-05-18 17:47:08 -0500 CDT)
+
+  Parov Stelar/Coco Pt.1/02 Hurt.test.bin
+      - 2.00MB, modified on (2012-05-18 17:47:08 -0500 CDT)
+
+  Parov Stelar/Coco Pt.1/03 For Rose(수원 아이파크 시티 CF삽입곡).test.bin
+      - 2.00MB, modified on (2012-05-18 17:47:08 -0500 CDT)
+
+  Parov Stelar/Coco Pt.2/01 The Mojo Radio Gang(Radio Ver.).test.bin
+      - 2.00MB, modified on (2012-05-18 17:47:08 -0500 CDT)
+
+  Parov Stelar/Coco Pt.2/02 Ragtime Cat(Featuring Lilja Bloom).test.bin
+      - 2.00MB, modified on (2012-05-18 17:47:08 -0500 CDT)
+
+  Parov Stelar/Coco Pt.2/03 Silent Snow(Featuring Max The Sax).test.bin
+      - 2.00MB, modified on (2012-05-18 17:47:08 -0500 CDT)
+
+  Parov Stelar/Coco Pt.2/04 Libella Swing(현대카드 TV CF 삽입곡).test.bin
+      - 2.00MB, modified on (2012-05-18 17:53:11 -0500 CDT)
+
+  Trans-Siberian Orchestra/.DS_Store
+      - 6.00KB, modified on (2012-05-18 17:47:19 -0500 CDT)
+
+  Trans-Siberian Orchestra/Christmas Eve and Other Stories/02 O Come All Ye Faithful_O Holy Night (instrumental).test.bin
+      - 2.00MB, modified on (2012-05-18 17:47:09 -0500 CDT)
+
+  Trans-Siberian Orchestra/Christmas Eve and Other Stories/05 The Silent Nutcracker (Instrumental).test.bin
+      - 2.00MB, modified on (2012-05-18 17:47:09 -0500 CDT)
+
+  Trans-Siberian Orchestra/Christmas Eve and Other Stories/06 A Mad Russian's Christmas (Instrumental).test.bin
+      - 2.00MB, modified on (2012-05-18 17:47:09 -0500 CDT)
+
+
+MAKE SURE CHANGED FILES ARE THINGS YOU'VE ACTUALLY CHANGED
+  (use "veb fix <file>" if a file has been corrupted in this repository)
+  (use "veb push", "veb pull", or "veb sync" to commit changed/new files)
+
+summary: 45 new, 0 changed
+info  >> 2012/05/19 18:59:08 veb.go:331: END status
+info  >> 2012/05/19 18:59:08 veb.go:333: status (45 new, 0 changed) took 3.161ms
+
+***** verify
+  - runs xsum on all files, warns when stuff's different but not modified.
+  - need a "quit" command for early exiting.
+
+***** fix
+for getting a good version of a corrupted file from the remote
+
+veb fix path/to/file.bin
+
+***** commit/push/pull/sync
+copies files to backup location
+
+Probably don't use "commit". This is more like git's push/pull.
+  - veb push - send local changes to remote
+  - veb pull - get remote changes to here
+  - veb sync - veb push && veb pull w/ warnings about collisions
+    - maybe they should all warn
+
+***** remote
+  - changes backup location
+  - silimalish to git remote
+
+*** 015: put globals somewhere global
+
+metadata dir, index file name, xsum file name
+log
+currently in index.go and cmd.go
 
 *** 999: nice
 Can we make go run nice'd, or low priority?
-
-*** 999: commands
-veb init
-  - make .veb dir and files, doesn't really do anything
-  - git init
-veb status
-  - checks what's changed/new, doesn't do anything
-  - git status
-veb commit
-  - copies files to backup location
-veb remote
-  - changes backup location
-  - silimalish to git remote
-veb verify
-  - runs xsum on all files, warns when stuff's different but not modified.
-  - need a "quit" command for early exiting.
 
 *** 999: future features
   - parallelized walk
