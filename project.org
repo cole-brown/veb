@@ -15,11 +15,11 @@ http://www.gnu.org/software/emacs/manual/html_node/org/Clocking-work-time.html
 Don't have two mains inside a package.
 
 A main of veb.go in package veb works. A main of cmd.go in package veb gives
-bullshit mystery errors.
+BS mystery errors.
     palladium:veb spydez$ go run src/veb/cmd.go 
     # veb
     src/veb/checksum.go:16: undefined: IndexEntry
-  - there is nothing wrong with checksum, and this proves it:
+  - there is nothing wrong with checksum:
     mv src/veb/cmd.go src/veb/veb.go
     go run src/veb/veb.go
     ((normal, expected output from running main))
@@ -28,46 +28,6 @@ bullshit mystery errors.
 
 select + closed channel == WTF
   - it'll run the closed channel's case randomly. 0.o
-
-* Time
-
-*** Total
-
-#+BEGIN: clocktable :maxlevel 3 :scope file 
-Clock summary at [2012-05-18 Fri 18:08].
-
-| L | Headline                                       | Time    |       |
-|---+------------------------------------------------+---------+-------|
-|   | *Total time*                                   | *19:07* |       |
-|---+------------------------------------------------+---------+-------|
-| 1 | TASKS                                          | 19:07   |       |
-| 2 | done 000: Go setup                             |         |  0:13 |
-| 2 | done 001: walk dir tree, print out             |         |  1:07 |
-| 2 | done 002: SHA-256 vs SHA1                      |         |  1:00 |
-| 2 | done 003: Hash file, print out result/time/etc |         |  0:20 |
-| 2 | done 004: walk & hash                          |         |  1:51 |
-| 2 | done 007: meta-file format                     |         |  1:08 |
-| 2 | started 008: index file                        |         | 10:50 |
-| 2 | started 011: parallize                         |         |  1:22 |
-| 2 | started 012: bash scripts for testing [3/5]    |         |  1:16 |
-#+END
-
-*** Today
-  // :tstart "2012-05-20 Sun 07:00"
-#+BEGIN: clocktable :maxlevel 3 :scope file :block today
-Clock summary at [2012-05-20 Sun 21:20].  Considered range is /today/.
-
-| L | Headline                    | Time   |      |      |
-|---+-----------------------------+--------+------+------|
-|   | *Total time*                | *3:55* |      |      |
-|---+-----------------------------+--------+------+------|
-| 1 | TASKS                       | 3:55   |      |      |
-| 2 | started 009: xsums file     |        | 0:02 |      |
-| 2 | started 014: commands [1/2] |        | 3:53 |      |
-| 3 | done status                 |        |      | 0:04 |
-| 3 | done verify [2/2]           |        |      | 3:35 |
-| 3 | done commit                 |        |      | 0:14 |
-#+END:
 
 * CMDs
 
@@ -113,17 +73,12 @@ Looks like it is... *shrugs*
 * TASKS
 *** done 000: Go setup
     closed: [2012-05-08 Tue 22:43]
-    clock: [2012-05-08 Tue 15:56]--[2012-05-08 Tue 16:09] =>  0:13
 
   - GOPATH, dir structure, etc.
     - ignore pkg & bin dirs in git
 
 *** done 001: walk dir tree, print out
     closed: [2012-05-08 Tue 22:48]
-    :CLOCK:
-    clock: [2012-05-08 Tue 22:38]--[2012-05-08 Tue 22:48] =>  0:10
-    clock: [2012-05-08 Tue 16:09]--[2012-05-08 Tue 17:06] =>  0:57
-    :END:
 
   - make test tree w/ tons o' files.
     - print out some of files in iTunes lib, use to make mostly empty files of same layout.
@@ -131,7 +86,6 @@ Looks like it is... *shrugs*
 
 *** done 002: SHA-256 vs SHA1
     closed: [2012-05-08 Tue 23:50]
-    clock: [2012-05-08 Tue 22:49]--[2012-05-08 Tue 23:49] =>  1:00
 
 shasum for initial stab...
 
@@ -177,16 +131,11 @@ CONCLUSION: Use SHA-1, since speed is more important than security
 
 *** done 003: Hash file, print out result/time/etc
     closed: [2012-05-09 Wed 00:32]
-    clock: [2012-05-09 Wed 00:12]--[2012-05-09 Wed 00:32] =>  0:20
 
   That was pretty easy...
 
 *** done 004: walk & hash
     closed: [2012-05-09 Wed 16:09]
-    :CLOCK:
-    clock: [2012-05-09 Wed 14:30]--[2012-05-09 Wed 16:09] =>  1:39
-    clock: [2012-05-09 Wed 00:48]--[2012-05-09 Wed 01:00] =>  0:12
-    :END:
 
 Made some rand files & checksummed them. (CMDs -> few random)
 
@@ -196,7 +145,6 @@ Steps:
 
 *** done 005: time stuff
     closed: [2012-05-18 Fri 19:57]
-    clock: [2012-05-18 Fri 19:42]--[2012-05-18 Fri 19:57] =>  0:15
 
     timer.go done!
 
@@ -207,12 +155,8 @@ Steps:
 
 *** done 007: meta-file format
     closed: [2012-05-09 Wed 17:29]
-    :CLOCK:
-    clock: [2012-05-09 Wed 16:27]--[2012-05-09 Wed 17:28] =>  1:01
-    clock: [2012-05-09 Wed 16:19]--[2012-05-09 Wed 16:26] =>  0:07
-  - See git's. They know wtf they're doing.
+  - See git's. They know what they're doing.
     - http://git-scm.com/book/en/Git-Internals
-      :END:
   - how git determines if a file's modified:
     - http://www-cs-students.stanford.edu/~blynn/gitmagic/ch08.html#_indexing
 
@@ -224,16 +168,6 @@ So 2 meta-files.
   - .veb/xsums -- checksums of all known files.
 
 *** waiting 008: index file
-    :CLOCK:
-    clock: [2012-05-18 Fri 16:20]--[2012-05-18 Fri 16:37] =>  0:17
-    clock: [2012-05-17 Thu 23:15]--[2012-05-17 Thu 23:40] =>  0:25
-    clock: [2012-05-17 Thu 20:20]--[2012-05-17 Thu 22:57] =>  2:37
-    clock: [2012-05-17 Thu 16:45]--[2012-05-17 Thu 16:53] =>  0:08
-    clock: [2012-05-16 Wed 21:19]--[2012-05-17 Thu 01:00] =>  3:41
-    clock: [2012-05-16 Wed 20:09]--[2012-05-16 Wed 21:18] =>  1:09
-    clock: [2012-05-16 Wed 17:25]--[2012-05-16 Wed 19:07] =>  1:42
-    clock: [2012-05-15 Tue 19:00]--[2012-05-15 Tue 19:51] =>  0:51
-    :END:
 
 Go os.FileInfo gives:
   Name() string       // base name of the file
@@ -264,13 +198,6 @@ TODOTODOTODO
 
 *** done 009: xsums file
     closed: [2012-05-20 Sun 21:55]
-    :CLOCK:
-    clock: [2012-05-20 Sun 21:45]--[2012-05-20 Sun 21:55] =>  0:10
-    clock: [2012-05-20 Sun 18:40]--[2012-05-20 Sun 18:42] =>  0:02
-    clock: [2012-05-19 Sat 01:39]--[2012-05-19 Sat 02:03] =>  0:24
-    clock: [2012-05-18 Fri 19:30]--[2012-05-18 Fri 19:41] =>  0:11
-    clock: [2012-05-18 Fri 17:54]--[2012-05-18 Fri 19:24] =>  1:30
-    :END:
 
 use shasum's checkfile format for the xsums
   - or add to index?
@@ -284,7 +211,6 @@ TODOTODOTODO
        - Put it in index.Save()
 
 *** started 010: log [3/5]
-    clock: [2012-05-19 Sat 15:42]--[2012-05-19 Sat 16:01] =>  0:19
 
 Use Go log pkg to log stuff.
   - Is there a way to tee the logs to stderr and a log file?
@@ -305,11 +231,6 @@ Log levels?
 
 *** done 011: parallize
     closed: [2012-05-20 Sun 21:58]
-    :CLOCK:
-    clock: [2012-05-17 Thu 16:06]--[2012-05-17 Thu 16:45] =>  0:39
-    clock: [2012-05-17 Thu 15:36]--[2012-05-17 Thu 16:02] =>  0:26
-    clock: [2012-05-16 Wed 21:51]--[2012-05-16 Wed 22:08] =>  0:17
-    :END:
 
 http://golang.org/doc/effective_go.html#parallel
   - put that code in veb.go before stuff happens.
@@ -321,10 +242,6 @@ serial walk: 32 ms for 2752 files (3076 files & folders)
   - think we'll be fine for now.
 
 *** started 012: bash scripts for testing [4/8]
-    :CLOCK:
-    clock: [2012-05-18 Fri 17:10]--[2012-05-18 Fri 17:53] =>  0:43
-    clock: [2012-05-18 Fri 16:37]--[2012-05-18 Fri 17:10] =>  0:33
-    :END:
 
   - [X] make scripts create in scratch/local or scratch/remote instead of just scratch
 
@@ -343,28 +260,20 @@ serial walk: 32 ms for 2752 files (3076 files & folders)
     closed: [2012-05-19 Sat 02:09]
   - so everything can be sent together, and won't have to restat files or anything
 
-*** started 014: commands [1/2]
+*** started 014: commands [2/2]
 
  - [X] test 'veb status' with changed files
    - and changed & new files
- - [ ] test 'veb verify' on freshly init'd repo
+ - [X] test 'veb verify' on freshly init'd repo
 
 ***** done init
       closed: [2012-05-19 Sat 15:40]
-    :CLOCK:
-    clock: [2012-05-19 Sat 14:09]--[2012-05-19 Sat 14:28] =>  0:19
-    clock: [2012-05-19 Sat 02:07]--[2012-05-19 Sat 02:56] =>  0:49
-    :END:
 
   - make .veb dir and files, doesn't really do anything
   - git init
 
 ***** done status
       closed: [2012-05-19 Sat 19:20]
-      :CLOCK:
-      clock: [2012-05-20 Sun 17:14]--[2012-05-20 Sun 17:18] =>  0:04
-      clock: [2012-05-19 Sat 16:00]--[2012-05-19 Sat 19:20] =>  3:20
-      :END:
 
   - checks what's changed/new, doesn't do anything
   - git status
@@ -677,11 +586,7 @@ info  >> 2012/05/20 17:47:38 veb.go:388: status (1 new, 6 changed) took 37.408ms
 
 ***** done verify [2/2]
       closed: [2012-05-20 Sun 18:26]
-      :CLOCK:
-      clock: [2012-05-20 Sun 17:18]--[2012-05-20 Sun 18:16] =>  0:58
-      clock: [2012-05-20 Sun 17:05]--[2012-05-20 Sun 17:14] =>  0:09
-      clock: [2012-05-20 Sun 14:04]--[2012-05-20 Sun 16:32] =>  2:28
-      :END:
+
 TODO
   - [X] stats for status line & exit info log
   - [X] need 'veb push' or some other means of saving index.
@@ -799,16 +704,19 @@ info  >> 2012/05/20 18:28:14 veb.go:475: verify (11 ok, 1 changed, 24 not checke
 
 ***** done commit
       closed: [2012-05-20 Sun 17:03]
-      clock: [2012-05-20 Sun 16:49]--[2012-05-20 Sun 17:03] =>  0:14
 
 debug command. For testin'.
 
 Probably not 'veb commit'. Maybe 'veb test-commit'.
 
-***** remote
-      clock: [2012-05-20 Sun 22:00]
+***** done remote
+      closed: [2012-05-20 Sun 23:21]
+
   - changes backup location
   - silimalish to git remote
+
+***** push
+veb push - send local changes to remote
 
 ***** fix
 for getting a good version of a corrupted file from the remote
@@ -819,7 +727,6 @@ veb fix path/to/file.bin
 copies files to backup location
 
 Probably don't use "commit". This is more like git's push/pull.
-  - veb push - send local changes to remote
   - veb pull - get remote changes to here
   - veb sync - veb push && veb pull w/ warnings about collisions
     - maybe they should all warn
@@ -830,7 +737,7 @@ metadata dir, index file name, xsum file name
 log
 currently in index.go and cmd.go
 
-*** 999: commands: remote
+*** 999: update commands: remote
 make veb remote more like git remote
   - probably also pull remote out of index and put in config file.
 
@@ -842,12 +749,19 @@ $ git remote -v
 github	git@github.com:spydez/hw.git (fetch)
 github	git@github.com:spydez/hw.git (push)
 
+*** 999: update commands: push
+make veb push more like git push
+
+git push <remote-name>
+
 *** 999: nice
 Can we make go run nice'd, or low priority?
 
 *** 999: future features
- - [ ] move commands out of main package so veb can be integrated into other things?
-   - Doubt it ever will... but might as well.
+  - move commands out of main package so veb can be integrated into other things?
+    - Doubt it ever will... but might as well.
+    - keep main in /veb
+      - move everything else in to /veb/libveb
   - parallelized walk
     - make walk only current dir, spawn subdirs off as separate goroutines
   - better multi-point syncing?
@@ -860,18 +774,22 @@ Can we make go run nice'd, or low priority?
           and asks which is desired.
     - may involve version controlling the veb meta-files and using git to figure that out.
       - "Hm... x.mp3 changed. Git! Do source and dest have previous file hases in common?"
-  - rsync option
-    - for when the backup isn't on the same computer or local network...
   - choice of hash functions on init
     - SHA1. SHA256. MD5 for the speed freaks...
   - non-local/non-mounted remotes
-    - talk w/ gob over network
+    - talk w/ gob over network for index
+    - rsync files
 
 * SLOC
   - Cheesy version
     $ wc -l `find . -iname "*.go"`
-    ...
-       43710 total
+  - non-blank lines version
+    find . -type f -iname "*.go" -print0 | xargs -0 cat | sed '/^\s*$/d' | wc -l
+
+  - [2012-05-21 Mon 14:28]
+    palladium:src spydez$ find . -type f -iname "*.go" -print0 | xargs -0 cat | sed '/^\s*$/d' | wc -l
+      1260
+
 
 # Local Variables: 
 # fill-column:80
