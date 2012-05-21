@@ -33,11 +33,8 @@ const (
 	// misc
 	QUIT_RUNE = 'q'
 	CHAN_SIZE = 1000
-
-	// debug help
-	// TODO: move to Logs?
-	IN_FUNC  = "START"
-	OUT_FUNC = "END"
+	INDENT_F = " " // use with Println == 2 spaces
+	INDENT_I = "      -"
 
 	// TODO: move somewhere else. Index uses thes too.
 	META_FOLDER = ".veb"
@@ -119,31 +116,60 @@ func main() {
 		out.Fatal("INSERT HELP HERE")
 	}
 
-	// act on command
-	switch flag.Args()[0] {
-	case INIT:
+	// init is a bit different (no pre-existing index),
+	// so take care of it here instead of inside switch
+	if flag.Args()[0] == INIT {
 		err := Init(logs)
 		if err != nil {
 			out.Fatal(err)
 		}
 		pwd, _ := os.Getwd()
 		out.Println("Initialized empty veb repository at", pwd)
+		return // done
+	}
 
+	// find veb repo
+	dir, err := cdBaseDir(logs)
+	if err != nil {
+		out.Fatal(err)
+	}
+
+	// load the index
+	index, err := veb.Load(logs)
+	if err != nil {
+		out.Fatal("veb could not load index")
+	}
+
+	// print intro
+	fmt.Println("veb repository at", dir, "\n")
+
+	// act on command
+	switch flag.Args()[0] {
 	case STATUS:
-		err := Status(logs)
+		err = Status(index, logs)
 		if err != nil {
 			out.Fatal(err)
 		}
 
 	case VERIFY:
-		err := Verify(logs)
+		err = Verify(index, logs)
 		if err != nil {
 			out.Fatal(err)
 		}
 
 	// TODO - this is just for testing. remove later
 	case "test-commit":
-		err := TestCommit(logs)
+		err = TestCommit(index, logs)
+		if err != nil {
+			out.Fatal(err)
+		}
+
+	case REMOTE:
+		if len(flag.Args()) < 2 {
+			out.Fatal(REMOTE, " needs a path to the backup repository",
+				"\n  e.g. 'veb remote ~/backups/music'")
+		}
+		err = Remote(index, flag.Args()[1], logs)
 		if err != nil {
 			out.Fatal(err)
 		}
@@ -160,9 +186,6 @@ func main() {
 	case SYNC:
 		// TODO: implement
 		out.Fatal("this command is not yet implemented")
-	case REMOTE:
-		// TODO: implement
-		out.Fatal("this command is not yet implemented")
 	case HELP:
 		// may provide per-cmd help later, but for now, just the default help
 		// TODO: per command help
@@ -176,7 +199,7 @@ func main() {
 // creates veb's META_FOLDER in current directory and empty veb metadata 
 // files inside META_FOLDER
 func Init(logs *veb.Logs) error {
-	logs.Info.Println(IN_FUNC, INIT)
+	defer logs.Un(logs.Trace(INIT))
 	var timer veb.Timer
 	timer.Start()
 
@@ -204,15 +227,13 @@ func Init(logs *veb.Logs) error {
 	xsums.Close()
 
 	// create & save empty index
-	// TODO ignoring remote for now
-	index := veb.New("foo", crypto.SHA1, logs)
+	index := veb.New(crypto.SHA1, logs)
 	err = index.Save()
 	if err != nil {
 		return err // logged in save
 	}
 
 	timer.Stop()
-	logs.Info.Println(OUT_FUNC, INIT)
 	logs.Info.Println(INIT, "took", timer.Duration())
 	return nil
 }
@@ -248,22 +269,10 @@ func Init(logs *veb.Logs) error {
 //
 // Format may seem a litte overly whitespaced, but when large amounts of files
 // are present (and/or long path/file names), the space is nice.
-func Status(logs *veb.Logs) error {
-	logs.Info.Println(IN_FUNC, STATUS)
+func Status(index *veb.Index, logs *veb.Logs) error {
+	defer logs.Un(logs.Trace(STATUS))
 	var timer veb.Timer
 	timer.Start()
-
-	// find veb repo
-	dir, err := cdBaseDir(logs)
-	if err != nil {
-		return err
-	}
-
-	// load the index
-	index, err := veb.Load(logs)
-	if err != nil {
-		return fmt.Errorf("veb could not load index")
-	}
 
 	// check for changes
 	files := make(chan veb.IndexEntry, CHAN_SIZE)
@@ -283,12 +292,6 @@ func Status(logs *veb.Logs) error {
 			changedFiles = append(changedFiles, f.Path)
 		}
 	}
-
-	// print intro
-	fmt.Println("veb repository at", dir, "\n")
-
-	INDENT_F := " " // use with Println == 2 spaces
-	INDENT_I := "      -"
 
 	// print new files
 	if len(newFiles) > 0 {
@@ -338,14 +341,14 @@ func Status(logs *veb.Logs) error {
 				direction := "increased"
 				if sizeChange < 0 {
 					direction = "decreased"
-					sizeChange -= sizeChange // absolute value
+					sizeChange = -sizeChange // absolute value
 				}
 
 				sanity := false
 
 				// print size change
 				if sizeChange != 0 {
-					fmt.Printf("%s filesize %s %s (%s -> %s)",
+					fmt.Printf("%s filesize %s %s (%s -> %s)\n",
 						INDENT_I, direction, sizeChange, curSize, prevSize)
 					sanity = true
 				}
@@ -358,7 +361,7 @@ func Status(logs *veb.Logs) error {
 
 				// print mode
 				if index.Files[f].Mode != fi.Mode() {
-					fmt.Printf("%s file mode changed (%3o-> %3o)\n",
+					fmt.Printf("%s file mode changed (%v -> %v)\n",
 						INDENT_I, index.Files[f].Mode, fi.Mode())
 					sanity = true
 				}
@@ -381,10 +384,10 @@ func Status(logs *veb.Logs) error {
 		fmt.Println("  (use 'veb fix <file>' if a file has been corrupted in this repository)")
 		fmt.Println("  (use 'veb push', 'veb pull', or 'veb sync' to commit changed/new files)")
 	}
-	fmt.Printf("\nsummary: %d new, %d changed\n", len(newFiles), len(changedFiles))
-
 	timer.Stop()
-	logs.Info.Println(OUT_FUNC, STATUS)
+	fmt.Printf("\nsummary: %d new, %d changed (%v)\n", 
+		len(newFiles), len(changedFiles), timer.Duration())
+
 	logs.Info.Printf("%s (%d new, %d changed) took %v\n",
 		STATUS, len(newFiles), len(changedFiles), timer.Duration())
 	return nil
@@ -393,22 +396,10 @@ func Status(logs *veb.Logs) error {
 // Runs every file in index through hashing algorithm and compares the result
 // against the xsum saved in the index.
 // Does not verify new files.
-func Verify(logs *veb.Logs) error {
-	logs.Info.Println(IN_FUNC, VERIFY)
+func Verify(index *veb.Index, logs *veb.Logs) error {
+	defer logs.Un(logs.Trace(VERIFY))
 	var timer veb.Timer
 	timer.Start()
-
-	// find veb repo
-	dir, err := cdBaseDir(logs)
-	if err != nil {
-		return err
-	}
-
-	// load the index
-	index, err := veb.Load(logs)
-	if err != nil {
-		return fmt.Errorf("veb could not load index")
-	}
 
 	// start listener for user's quit signal
 	quit := make(chan int)
@@ -423,9 +414,14 @@ func Verify(logs *veb.Logs) error {
 	}()
 
 	// print intro
-	fmt.Println("veb repository at", dir, "\n")
 	fmt.Println("Verifying file checksums against those stored in veb index...")
 	fmt.Println("Note: new files (as shown by 'veb status') will not be checked.\n")
+
+	// bail early for empty index
+	if len(index.Files) == 0 {
+		fmt.Println("No files in veb index. Nothing to verify.")
+		return nil
+	}
 
 	// toss everything in index into input channel
 	files := make(chan veb.IndexEntry, CHAN_SIZE)
@@ -448,44 +444,106 @@ func Verify(logs *veb.Logs) error {
 		for i := 0; i < maxHandlers; i++ {
 			<-done
 		}
-		close(changed)
 		quit <- 1
 	}()
 
+	first := true
+	totalFiles := len(index.Files)
+	changedFiles := 0
+	scannedFiles := 0
 	for {
-		i := 0 // TODO testing...
 		select {
 		case <-quit:
 			// We're done! Either by finishing or user interrupt.
-			// TODO
-			// print outro
+			notChecked := totalFiles - scannedFiles
+			okFiles := totalFiles - changedFiles - notChecked
 
-			// info logs
+			// print outro
 			timer.Stop()
-			logs.Info.Println(OUT_FUNC, VERIFY)
+			fmt.Println("\n\nMAKE SURE CHANGED FILES ARE THINGS YOU'VE ACTUALLY CHANGED")
+			fmt.Println("  (use 'veb fix <file>' if a file has been corrupted in this repository)")
+			fmt.Println("  (use 'veb push', 'veb pull', or 'veb sync' to commit changed/new files)")
+			fmt.Printf("\nsummary: %d ok, %d changed, %d not checked in %v\n",
+				okFiles, changedFiles, notChecked, timer.Duration())
+
+			// info log
 			logs.Info.Printf("%s (%d ok, %d changed, %d not checked) took %v\n",
-				VERIFY, 0, 0, 0, timer.Duration()) // TODO: stats in there instead of zeros
+				VERIFY, okFiles, changedFiles, notChecked, timer.Duration())
 			return nil
 
 		case f := <-changed:
 			// clear status line w/ carriage return & 80 spaces
 			fmt.Println("\r                                                                                ")
 
-			// TODO
-			//  - will need a 'print changes' func.
-			//  - ERROR!!!!1~! when something's xsum is different but stats are the same
-			//  - WARN probably when stats are different but xsum's the same?
-			fmt.Println("file:", f.Path)
+			// print header once first file is encountered
+			if first {
+				fmt.Println("----------------------")
+				fmt.Println("Files with new hashes:")
+				fmt.Println("----------------------")
+				first = false
+			}
 
-			// fallthrough to print status line
+			// TODO
+			//  - move all this to a 'print changed' function?
+
+			// print file name
+			fmt.Println(INDENT_F, f.Path)
+
+			// figure out filesize
+			curSize := ByteSize(f.Size)
+			prevSize := ByteSize(index.Files[f.Path].Size)
+			sizeChange := curSize - prevSize
+			direction := "increased"
+			if sizeChange < 0 {
+				direction = "decreased"
+				sizeChange = -sizeChange // absolute value
+			}
+			
+			sanity := false
+			
+			// print size change
+			if sizeChange != 0 {
+				fmt.Printf("%s filesize %s %s (%s -> %s)\n",
+					INDENT_I, direction, sizeChange, curSize, prevSize)
+				sanity = true
+			}
+			
+			// print mtime
+			if index.Files[f.Path].ModTime != f.ModTime {
+				fmt.Printf("%s modified on (%v)\n", INDENT_I, f.ModTime)
+				sanity = true
+			}
+			
+			// print mode
+			if index.Files[f.Path].Mode != f.Mode {
+				fmt.Printf("%s file mode changed (%v -> %v)\n",
+					INDENT_I, index.Files[f.Path].Mode, f.Mode)
+				sanity = true
+			}
+			
+			// sanity check & snark
+			if !sanity {
+				fmt.Printf("%s ...well /something/ changed. Dunno what. *shrugs*\n", INDENT_I)
+			}
+			
+			// print xsums
+			// TODO: dynamic hash name instead of hard 'SHA1'
+			fmt.Printf("%s previous SHA1: %x\n", INDENT_I, index.Files[f.Path].Xsum)
+			fmt.Printf("%s current  SHA1: %x\n", INDENT_I, f.Xsum)
+
 			fmt.Printf("\n")
-			// TODO: actual status line
-			i++
-			fmt.Printf("\r%4d: ", i)
+
+			// status line
+			changedFiles++
+			scannedFiles = totalFiles - len(files)
+			fmt.Printf("\rscanned: %6d of %6d files (%d changed) (type 'q' to quit): ",
+				scannedFiles, totalFiles, changedFiles)
+
 		default:
-			// TODO: actual status line
-			i++
-			fmt.Printf("\r%4d: ", i)
+			// status line
+			scannedFiles = totalFiles - len(files)
+			fmt.Printf("\rscanned: %6d of %6d files (%d changed) (type 'q' to quit): ",
+				scannedFiles, totalFiles, changedFiles)
 		}
 	}
 
@@ -497,23 +555,10 @@ func Verify(logs *veb.Logs) error {
 // remove this
 // it's for testing
 // it just saves the current xsum/status of everything to the index
-func TestCommit(logs *veb.Logs) error {
-	logs.Info.Println(IN_FUNC, "test-commit")
+func TestCommit(index *veb.Index, logs *veb.Logs) error {
+	defer logs.Un(logs.Trace("test-commit"))
 	var timer veb.Timer
 	timer.Start()
-
-	// find veb repo
-	dir, err := cdBaseDir(logs)
-	if err != nil {
-		return err
-	}
-	fmt.Println("veb repository at", dir, "\n")
-
-	// load the index
-	index, err := veb.Load(logs)
-	if err != nil {
-		return fmt.Errorf("veb could not load index")
-	}
 
 	// check for changes
 	files := make(chan veb.IndexEntry, CHAN_SIZE)
@@ -526,7 +571,7 @@ func TestCommit(logs *veb.Logs) error {
 		go func() {
 			for f := range files {
 				// calculate checksum hash
-				err = veb.Xsum(&f, logs)
+				err := veb.Xsum(&f, logs)
 				if err != nil {
 					logs.Err.Println("checksum for verify failed:", err)
 				}
@@ -555,9 +600,62 @@ func TestCommit(logs *veb.Logs) error {
 
 	// info logs
 	timer.Stop()
-	logs.Info.Println(OUT_FUNC, "test-commit")
 	logs.Info.Printf("%s took %v\n",
 		"test-commit", timer.Duration())
+	return nil
+}
+
+func Remote(index *veb.Index, remote string, logs *veb.Logs) error {
+	defer logs.Un(logs.Trace(REMOTE))
+	var timer veb.Timer
+	timer.Start()
+
+	// check to see if remote exists
+	fi, err := os.Stat(remote)
+	if err != nil {
+		if os.IsNotExist(err) {
+			logs.Err.Println(err)
+			return fmt.Errorf("veb remote dir does not exist: %v", err)
+		} else {
+			logs.Err.Println(err)
+			return err
+		}
+	} else if !fi.IsDir() {
+		// ain't a directory
+		logs.Err.Println(remote, "isn't a directory")
+		return fmt.Errorf("veb remote must be a folder: %s is not a folder", remote)
+	}
+
+	// check to see if it's a veb repo
+	remoteRepo := path.Join(remote, META_FOLDER)
+	fi, err = os.Stat(remoteRepo)
+	if err != nil {
+		if os.IsNotExist(err) {
+			logs.Err.Println(err)
+			fmt.Println("veb remote needs to be initialized as a veb repository",
+				"\n  (use 'veb init' in remote dir)")
+			return err
+		} else {
+			logs.Err.Println(err)
+			return err
+		}
+	} else if !fi.IsDir() {
+		// ain't a directory
+		logs.Err.Println(remoteRepo, "isn't a directory")
+		fmt.Println("veb remote needs", remoteRepo, "to be a folder",
+			"\nDelete or rename that file and run 'veb init' from", remote, "\n")
+		return fmt.Errorf("%s isn't a directory", remoteRepo)
+	}
+
+	// set remote
+	index.Remote = remote
+	index.Save()
+	fmt.Println("veb added", remote, "as the remote")
+
+	// info logs
+	timer.Stop()
+	logs.Info.Printf("%s took %v\n",
+		REMOTE, timer.Duration())
 	return nil
 }
 
@@ -600,7 +698,7 @@ func cdBaseDir(logs *veb.Logs) (string, error) {
 
 	if !found {
 		logs.Err.Println("veb could not find", META_FOLDER, "metafolder")
-		return "", fmt.Errorf("veb could not find %v metafolder at or %v folders below: %v",
+		return "", fmt.Errorf("veb could not find %v metafolder at or (up to %v folders) below: %v",
 			META_FOLDER, MAX_PARENTS, pwd)
 	}
 

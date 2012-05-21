@@ -22,6 +22,7 @@ import (
 const (
 	META_FOLDER = ".veb"
 	INDEX_FILE  = "index" // inside of META_FOLDER only
+	XSUMS_FILE  = "xsums" // inside of META_FOLDER only
 )
 
 // The veb index is a map indexed by relative paths
@@ -117,8 +118,8 @@ func oldmain() {
 }
 
 // Creates a new, empty, Index
-func New(remote string, hash crypto.Hash, logs *Logs) *Index {
-	ret := Index{make(map[string]IndexEntry), remote, hash, logs}
+func New(hash crypto.Hash, logs *Logs) *Index {
+	ret := Index{make(map[string]IndexEntry), "", hash, logs}
 	return &ret
 }
 
@@ -174,6 +175,28 @@ func (x *Index) Save() error {
 	if err != nil {
 		x.logs.Err.Println("couldn't save index:", err)
 		return err
+	}
+
+	// move previous index file to backup file, in case something goes badly.
+	// overwrites previous backup index, if it exists.
+	err = os.Rename(path.Join(META_FOLDER, XSUMS_FILE),
+		path.Join(META_FOLDER, XSUMS_FILE+"~"))
+	if err != nil {
+		x.logs.Warn.Println("could not backup old xsums:", err)
+		// Don't return error. 
+	}
+
+	// new xsums file
+	xsfile, err := os.Create(path.Join(META_FOLDER, XSUMS_FILE))
+	if err != nil {
+		x.logs.Err.Println(err)
+		return err
+	}
+	defer xsfile.Close() // make sure to close that file
+	
+	// write all xsums out
+	for _, e := range x.Files {
+		xsfile.WriteString(XsumString(&e))
 	}
 
 	return nil
@@ -258,8 +281,8 @@ func (x Index) checkWalker(changed chan IndexEntry, modOnly bool) func(path stri
 				changed <- x.Files[path]
 			}
 		} else if file.Size != info.Size() ||
-			file.ModTime != info.ModTime() {
-			// TODO: also compare mode?
+			file.ModTime != info.ModTime() ||
+			file.Mode != info.Mode() {
 			// modified file
 			// add to channel for processing
 			changed <- x.Files[path]

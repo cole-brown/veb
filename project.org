@@ -26,6 +26,9 @@ bullshit mystery errors.
 
 "xsum.go" is a no-no? It worked as hash.go, didn't as xsum.go, and does as checksum.go.
 
+select + closed channel == WTF
+  - it'll run the closed channel's case randomly. 0.o
+
 * Time
 
 *** Total
@@ -50,20 +53,20 @@ Clock summary at [2012-05-18 Fri 18:08].
 #+END
 
 *** Today
-
+  // :tstart "2012-05-20 Sun 07:00"
 #+BEGIN: clocktable :maxlevel 3 :scope file :block today
-Clock summary at [2012-05-19 Sat 19:23].  Considered range is /today/.
+Clock summary at [2012-05-20 Sun 21:20].  Considered range is /today/.
 
 | L | Headline                    | Time   |      |      |
 |---+-----------------------------+--------+------+------|
-|   | *Total time*                | *5:11* |      |      |
+|   | *Total time*                | *3:55* |      |      |
 |---+-----------------------------+--------+------+------|
-| 1 | TASKS                       | 5:11   |      |      |
-| 2 | started 009: xsums file     |        | 0:24 |      |
-| 2 | started 010: log [3/4]      |        | 0:19 |      |
-| 2 | started 014: commands [0/1] |        | 4:28 |      |
-| 3 | done init                   |        |      | 1:08 |
-| 3 | done status                 |        |      | 3:20 |
+| 1 | TASKS                       | 3:55   |      |      |
+| 2 | started 009: xsums file     |        | 0:02 |      |
+| 2 | started 014: commands [1/2] |        | 3:53 |      |
+| 3 | done status                 |        |      | 0:04 |
+| 3 | done verify [2/2]           |        |      | 3:35 |
+| 3 | done commit                 |        |      | 0:14 |
 #+END:
 
 * CMDs
@@ -259,8 +262,11 @@ TODOTODOTODO
    - [X] implement Export()? Or is that for 009:xsums?
      - Xsums.
 
-*** started 009: xsums file
+*** done 009: xsums file
+    closed: [2012-05-20 Sun 21:55]
     :CLOCK:
+    clock: [2012-05-20 Sun 21:45]--[2012-05-20 Sun 21:55] =>  0:10
+    clock: [2012-05-20 Sun 18:40]--[2012-05-20 Sun 18:42] =>  0:02
     clock: [2012-05-19 Sat 01:39]--[2012-05-19 Sat 02:03] =>  0:24
     clock: [2012-05-18 Fri 19:30]--[2012-05-18 Fri 19:41] =>  0:11
     clock: [2012-05-18 Fri 17:54]--[2012-05-18 Fri 19:24] =>  1:30
@@ -271,12 +277,13 @@ use shasum's checkfile format for the xsums
     - or both...
 
 TODOTODOTODO
- - TODO [0/1]
+ - TODO [0/2]
    - [ ] implement Export() for sending xsums out to shasum-formatted file.
      - ...I'm thinking this should go back in Index. :/
        - maybe have the formatter in Xsum.
+       - Put it in index.Save()
 
-*** started 010: log [3/4]
+*** started 010: log [3/5]
     clock: [2012-05-19 Sat 15:42]--[2012-05-19 Sat 16:01] =>  0:19
 
 Use Go log pkg to log stuff.
@@ -287,7 +294,7 @@ Use Go log pkg to log stuff.
  - [X] index.go
  - [X] checksum.go
  - [X] veb.go (commands)
- - [ ] 
+ - [ ] MultiWriter
 
 Log levels?
   - struct w/ 3 logs
@@ -296,7 +303,8 @@ Log levels?
     - info
  - Yes.
 
-*** started 011: parallize
+*** done 011: parallize
+    closed: [2012-05-20 Sun 21:58]
     :CLOCK:
     clock: [2012-05-17 Thu 16:06]--[2012-05-17 Thu 16:45] =>  0:39
     clock: [2012-05-17 Thu 15:36]--[2012-05-17 Thu 16:02] =>  0:26
@@ -304,6 +312,7 @@ Log levels?
     :END:
 
 http://golang.org/doc/effective_go.html#parallel
+  - put that code in veb.go before stuff happens.
 
 straight walk vs goroutined walk?
   - filepath.Walk itself is serial, so no big benefits can be gained
@@ -334,12 +343,11 @@ serial walk: 32 ms for 2752 files (3076 files & folders)
     closed: [2012-05-19 Sat 02:09]
   - so everything can be sent together, and won't have to restat files or anything
 
-*** started 014: commands [0/1]
+*** started 014: commands [1/2]
 
- - [ ] move commands out of main package so veb can be integrated into other things?
-   - Doubt it ever will... but might as well.
- - [ ] test 'veb status' with changed files
+ - [X] test 'veb status' with changed files
    - and changed & new files
+ - [ ] test 'veb verify' on freshly init'd repo
 
 ***** done init
       closed: [2012-05-19 Sat 15:40]
@@ -353,7 +361,10 @@ serial walk: 32 ms for 2752 files (3076 files & folders)
 
 ***** done status
       closed: [2012-05-19 Sat 19:20]
+      :CLOCK:
+      clock: [2012-05-20 Sun 17:14]--[2012-05-20 Sun 17:18] =>  0:04
       clock: [2012-05-19 Sat 16:00]--[2012-05-19 Sat 19:20] =>  3:20
+      :END:
 
   - checks what's changed/new, doesn't do anything
   - git status
@@ -574,13 +585,105 @@ summary: 0 new, 0 changed
 info  >> 2012/05/20 17:03:34 veb.go:387: END status
 info  >> 2012/05/20 17:03:34 veb.go:389: status (0 new, 0 changed) took 1.802ms
 
-***** waiting verify [1/2]
+******* actual output (no new; some changed files)
+palladium:local spydez$ go run ../../../src/veb/veb.go status
+info  >> 2012/05/20 17:17:55 veb.go:252: START status
+veb repository at /Users/spydez/sourcepan/veb/test/scratch/local 
+
+--------------
+Changed files:
+--------------
+  311/Don't Tread On Me/01 Don't Tread On Me.test.bin
+      - file mode changed (644-> 664)
+
+  Fall Out Boy/Folie À Deux/01 Disloyal Order Of Water Buffaloes.test.bin
+      - filesize increased 4.00B (2.00MB -> 2.00MB)
+      - modified on (2012-05-20 17:13:48 -0500 CDT)
+      - file mode changed (644-> 664)
+
+  Fall Out Boy/Folie À Deux/02 I Don't Care.test.bin
+      - filesize increased 4.00B (2.00MB -> 2.00MB)
+      - modified on (2012-05-20 17:13:48 -0500 CDT)
+
+  Five Iron Frenzy/Our Newest Album Ever!/01 Handbook for the Sellout.test.bin
+      - filesize increased 4.00B (2.00MB -> 2.00MB)
+      - modified on (2012-05-20 17:13:48 -0500 CDT)
+
+  Movits!/Äppelknyckarjazz/01 Ta på dig dansskorna.test.bin
+      - filesize increased 4.00B (2.00MB -> 2.00MB)
+      - modified on (2012-05-20 17:13:48 -0500 CDT)
+
+  Parov Stelar/Coco Pt.2/04 Libella Swing(현대카드 TV CF 삽입곡).test.bin
+      - filesize increased 4.00B (2.00MB -> 2.00MB)
+      - modified on (2012-05-20 17:13:48 -0500 CDT)
+
+
+MAKE SURE CHANGED FILES ARE THINGS YOU'VE ACTUALLY CHANGED
+  (use 'veb fix <file>' if a file has been corrupted in this repository)
+  (use 'veb push', 'veb pull', or 'veb sync' to commit changed/new files)
+
+summary: 0 new, 6 changed
+info  >> 2012/05/20 17:17:55 veb.go:387: END status
+info  >> 2012/05/20 17:17:55 veb.go:389: status (0 new, 6 changed) took 2.203ms
+
+
+******* actual output (new & changed)
+palladium:local spydez$ go run ../../../src/veb/veb.go status
+info  >> 2012/05/20 17:47:38 veb.go:254: START status
+veb repository at /Users/spydez/sourcepan/veb/test/scratch/local 
+
+----------
+New files:
+----------
+  foo.new
+      - 0.00B, modified on (2012-05-20 17:47:34 -0500 CDT)
+
+
+--------------
+Changed files:
+--------------
+  311/Don't Tread On Me/01 Don't Tread On Me.test.bin
+      - file mode changed (-rw-r--r-- -> -rw-rw-r--)
+
+  Fall Out Boy/Folie À Deux/01 Disloyal Order Of Water Buffaloes.test.bin
+      - filesize increased 4.00B (2.00MB -> 2.00MB)
+      - modified on (2012-05-20 17:13:48 -0500 CDT)
+      - file mode changed (-rw-r--r-- -> -rw-rw-r--)
+
+  Fall Out Boy/Folie À Deux/02 I Don't Care.test.bin
+      - filesize increased 4.00B (2.00MB -> 2.00MB)
+      - modified on (2012-05-20 17:13:48 -0500 CDT)
+
+  Five Iron Frenzy/Our Newest Album Ever!/01 Handbook for the Sellout.test.bin
+      - filesize increased 4.00B (2.00MB -> 2.00MB)
+      - modified on (2012-05-20 17:13:48 -0500 CDT)
+
+  Movits!/Äppelknyckarjazz/01 Ta på dig dansskorna.test.bin
+      - filesize increased 4.00B (2.00MB -> 2.00MB)
+      - modified on (2012-05-20 17:13:48 -0500 CDT)
+
+  Parov Stelar/Coco Pt.2/04 Libella Swing(현대카드 TV CF 삽입곡).test.bin
+      - filesize increased 4.00B (2.00MB -> 2.00MB)
+      - modified on (2012-05-20 17:13:48 -0500 CDT)
+
+
+MAKE SURE CHANGED FILES ARE THINGS YOU'VE ACTUALLY CHANGED
+  (use 'veb fix <file>' if a file has been corrupted in this repository)
+  (use 'veb push', 'veb pull', or 'veb sync' to commit changed/new files)
+
+summary: 1 new, 6 changed
+info  >> 2012/05/20 17:47:38 veb.go:386: END status
+info  >> 2012/05/20 17:47:38 veb.go:388: status (1 new, 6 changed) took 37.408ms
+
+***** done verify [2/2]
+      closed: [2012-05-20 Sun 18:26]
       :CLOCK:
-      clock: [2012-05-20 Sun 17:05]
+      clock: [2012-05-20 Sun 17:18]--[2012-05-20 Sun 18:16] =>  0:58
+      clock: [2012-05-20 Sun 17:05]--[2012-05-20 Sun 17:14] =>  0:09
       clock: [2012-05-20 Sun 14:04]--[2012-05-20 Sun 16:32] =>  2:28
       :END:
 TODO
-  - [ ] stats for status line & exit info log
+  - [X] stats for status line & exit info log
   - [X] need 'veb push' or some other means of saving index.
     - verifying nothing (empty index) is pretty bland.
     - Made test-commit.
@@ -608,6 +711,92 @@ DESIRED VEB STATUS OUTPUT:
     
   scanned:   400 of 56780 files (1 changed file) (type 'q' to quit): _
 
+******* actual output (full check)
+palladium:local spydez$ go run ../../../src/veb/veb.go verify
+info  >> 2012/05/20 18:27:43 veb.go:396: START verify
+veb repository at /Users/spydez/sourcepan/veb/test/scratch/local 
+
+Verifying file checksums against those stored in veb index...
+Note: new files (as shown by 'veb status') will not be checked.
+
+                                                                                
+----------------------
+Files with new hashes:
+----------------------
+  Fall Out Boy/Folie À Deux/02 I Don't Care.test.bin
+      - filesize increased 4.00B (2.00MB -> 2.00MB)
+      - modified on (2012-05-20 17:13:48 -0500 CDT)
+      - previous SHA1: 1b206714df8b9c019df4ccd4aadafcae299d57a2
+      - current  SHA1: 7eadac6d4623b095daa8eeda44fe8a503bdb40d6
+
+                                                                                
+  Fall Out Boy/Folie À Deux/01 Disloyal Order Of Water Buffaloes.test.bin
+      - filesize increased 4.00B (2.00MB -> 2.00MB)
+      - modified on (2012-05-20 17:13:48 -0500 CDT)
+      - file mode changed (-rw-r--r-- -> -rw-rw-r--)
+      - previous SHA1: 86ac6e4f783113c8afd7dd8e32b50407885e9ea9
+      - current  SHA1: fa3ee41f9141f3f137b2846b50f3b46f69fd91a8
+
+                                                                                
+  Movits!/Äppelknyckarjazz/01 Ta på dig dansskorna.test.bin
+      - filesize increased 4.00B (2.00MB -> 2.00MB)
+      - modified on (2012-05-20 17:13:48 -0500 CDT)
+      - previous SHA1: 2aad0943ffa8306d030ea5d750ca9b780f69ec4c
+      - current  SHA1: 55e874427b6829801dd1a1e8a8532f9110a9c396
+
+                                                                                
+  Parov Stelar/Coco Pt.2/04 Libella Swing(현대카드 TV CF 삽입곡).test.bin
+      - filesize increased 4.00B (2.00MB -> 2.00MB)
+      - modified on (2012-05-20 17:13:48 -0500 CDT)
+      - previous SHA1: f42f01fed7e4306fbcb0d3f954f1b0a2a23e82cf
+      - current  SHA1: aaa72c136960e5671bc6bdc9fcc42add05dea7f3
+
+                                                                                
+  Five Iron Frenzy/Our Newest Album Ever!/01 Handbook for the Sellout.test.bin
+      - filesize increased 4.00B (2.00MB -> 2.00MB)
+      - modified on (2012-05-20 17:13:48 -0500 CDT)
+      - previous SHA1: 418201374e41fc7e6be83e1e4c97acc24dd37cbc
+      - current  SHA1: 1752eaab329a3e9de4b31e0dd443af14569918d3
+
+scanned:     36 of     36 files (5 changed) (type 'q' to quit): 
+
+MAKE SURE CHANGED FILES ARE THINGS YOU'VE ACTUALLY CHANGED
+  (use 'veb fix <file>' if a file has been corrupted in this repository)
+  (use 'veb push', 'veb pull', or 'veb sync' to commit changed/new files)
+
+summary: 31 ok, 5 changed, 0 not checked
+info  >> 2012/05/20 18:27:46 veb.go:473: END verify
+info  >> 2012/05/20 18:27:46 veb.go:475: verify (31 ok, 5 changed, 0 not checked) took 3.122954s
+
+******* actual ouput (early quit)
+palladium:local spydez$ go run ../../../src/veb/veb.go verify
+info  >> 2012/05/20 18:28:13 veb.go:396: START verify
+veb repository at /Users/spydez/sourcepan/veb/test/scratch/local 
+
+Verifying file checksums against those stored in veb index...
+Note: new files (as shown by 'veb status') will not be checked.
+
+                                                                                
+----------------------
+Files with new hashes:
+----------------------
+  Movits!/Äppelknyckarjazz/01 Ta på dig dansskorna.test.bin
+      - filesize increased 4.00B (2.00MB -> 2.00MB)
+      - modified on (2012-05-20 17:13:48 -0500 CDT)
+      - previous SHA1: 2aad0943ffa8306d030ea5d750ca9b780f69ec4c
+      - current  SHA1: 55e874427b6829801dd1a1e8a8532f9110a9c396
+
+scanned:     12 of     36 files (1 changed) (type 'q' to quit): q
+scanned:     12 of     36 files (1 changed) (type 'q' to quit): 
+
+MAKE SURE CHANGED FILES ARE THINGS YOU'VE ACTUALLY CHANGED
+  (use 'veb fix <file>' if a file has been corrupted in this repository)
+  (use 'veb push', 'veb pull', or 'veb sync' to commit changed/new files)
+
+summary: 11 ok, 1 changed, 24 not checked
+info  >> 2012/05/20 18:28:14 veb.go:473: END verify
+info  >> 2012/05/20 18:28:14 veb.go:475: verify (11 ok, 1 changed, 24 not checked) took 863.801ms
+
 ***** done commit
       closed: [2012-05-20 Sun 17:03]
       clock: [2012-05-20 Sun 16:49]--[2012-05-20 Sun 17:03] =>  0:14
@@ -615,6 +804,11 @@ DESIRED VEB STATUS OUTPUT:
 debug command. For testin'.
 
 Probably not 'veb commit'. Maybe 'veb test-commit'.
+
+***** remote
+      clock: [2012-05-20 Sun 22:00]
+  - changes backup location
+  - silimalish to git remote
 
 ***** fix
 for getting a good version of a corrupted file from the remote
@@ -630,20 +824,30 @@ Probably don't use "commit". This is more like git's push/pull.
   - veb sync - veb push && veb pull w/ warnings about collisions
     - maybe they should all warn
 
-***** remote
-  - changes backup location
-  - silimalish to git remote
-
 *** 015: put globals somewhere global
 
 metadata dir, index file name, xsum file name
 log
 currently in index.go and cmd.go
 
+*** 999: commands: remote
+make veb remote more like git remote
+  - probably also pull remote out of index and put in config file.
+
+$ git remote
+$ git remote add github git@github.com:spydez/hw.git
+$ git remote
+github
+$ git remote -v
+github	git@github.com:spydez/hw.git (fetch)
+github	git@github.com:spydez/hw.git (push)
+
 *** 999: nice
 Can we make go run nice'd, or low priority?
 
 *** 999: future features
+ - [ ] move commands out of main package so veb can be integrated into other things?
+   - Doubt it ever will... but might as well.
   - parallelized walk
     - make walk only current dir, spawn subdirs off as separate goroutines
   - better multi-point syncing?
@@ -660,6 +864,8 @@ Can we make go run nice'd, or low priority?
     - for when the backup isn't on the same computer or local network...
   - choice of hash functions on init
     - SHA1. SHA256. MD5 for the speed freaks...
+  - non-local/non-mounted remotes
+    - talk w/ gob over network
 
 * SLOC
   - Cheesy version

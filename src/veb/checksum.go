@@ -9,7 +9,7 @@ import (
 	// TODO: these hashes
 	//	"crypto/sha256"
 	//	"crypto/md5"
-//	"fmt"
+	"fmt"
 )
 
 func Xsum(entry *IndexEntry, logs *Logs) error {
@@ -33,13 +33,13 @@ func Xsum(entry *IndexEntry, logs *Logs) error {
 
 	entry.Xsum = hasher.Sum(nil)
 
-//	fmt.Printf("%x  %s\n", hasher.Sum(nil), entry.Path)
-	
 	return err
 }
 
-// shasum format:
-//		fmt.Printf("%x  %s\n", hasher.Sum(nil), testfile)
+func XsumString(entry *IndexEntry) string {
+	// shasum format:
+	return fmt.Sprintf("%x  %s\n", entry.Xsum, entry.Path)
+}
 
 // TODO
 //  - hashing options!
