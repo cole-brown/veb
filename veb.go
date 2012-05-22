@@ -16,7 +16,7 @@ import (
 	"path"
 	"runtime"
 	"time"
-	"veb/veb"
+	"spydez/veb/veb"
 )
 
 const (
