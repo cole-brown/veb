@@ -14,20 +14,24 @@ Examples:
   - movies
   - pictures
 
+Veb isn't worth much if you only have one hard drive. It is a way to help you
+back up your files to another hard drive, a NAS, a thumb drive, etc.
+
 Veb was built out of an unhealthy fear of evil hard drives and silent file
 corruption. You have 10GB of pictures, 50GB of music, 1TB of movies. How do you
 know a sector somewhere on you 10 year old hard drive hasn't gone wonky and
 corrupted something? How do you know you didn't accidentally overwrite (or
-delete) those pictures from 3 years ago? Veb gives you some tools to help.
+delete) those pictures from 3 years ago? Veb gives you some tools to help, so
+that those automatic backups aren't automatically backing up corrupted data.
 
 Veb tracks files via mod time, size, etc. in order to quickly determine what has
-changed. 'veb status' will quickly show these changes. 
+changed. 'veb status' will show these changes.
 
 Veb also keeps a checksum of every file as it is added to the veb
-repository. 'veb verify' will re-check every file to see if something's contents
+repository. 'veb verify' will re-check every file to see if its contents have
 been silently changed. Verification could take some time... It has to read
-everything in the repository, so if the repository is 1TB, you may want to go do
-something else while veb does the math.
+everything in the repository, so if the repository is 1TB, you may want to get a
+snack while veb does the math.
 
 What veb won't do is read your mind. You'll have to remember what files you've
 changed so when you run 'veb status' or 'veb verify', you can parse the results
