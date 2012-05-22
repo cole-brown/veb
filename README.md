@@ -95,7 +95,7 @@ log.txt is a plain text file containing info & error logs from all your veb comm
     
     
     info  >> 2012/05/21 23:31:05 log.go:42: ENTERING remote
-    error >> 2012/05/21 23:31:05 veb.go:655: stat /Users/spydez/sourcepan/go/src/spydez/veb/test/scratch/remote/.veb: no such file or directory
+    error >> 2012/05/21 23:31:05 veb.go:655: stat ~/test/scratch/remote/.veb: no such file or directory
     info  >> 2012/05/21 23:31:05 log.go:47: LEAVING  remote
 
     info  >> 2012/05/21 23:31:30 log.go:42: ENTERING remote
