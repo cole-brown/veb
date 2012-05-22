@@ -779,11 +779,11 @@ log
 currently in index.go and cmd.go
 
 *** 016: clean deleted files out of index
-*** 017: FINALS [1/4]
+*** 017: FINALS [2/5]
   - [ ] clean up
-  - [ ] write README
+  - [X] write README
   - [X] go install, test the bin.
-  - [ ] 
+  - [ ] git tag v0.1
 
 *** 999: update commands: remote
 make veb remote more like git remote
@@ -808,8 +808,6 @@ Can we make go run nice'd, or low priority?
 *** 999: future features
   - move commands out of main package so veb can be integrated into other things?
     - Doubt it ever will... but might as well.
-    - keep main in /veb
-      - move everything else in to /veb/libveb
   - parallelized walk
     - make walk only current dir, spawn subdirs off as separate goroutines
   - better multi-point syncing?
@@ -827,6 +825,182 @@ Can we make go run nice'd, or low priority?
   - non-local/non-mounted remotes
     - talk w/ gob over network for index
     - rsync files
+
+* example
+
+    palladium:scratch spydez$ cd local
+
+    palladium:local spydez$ veb init
+    Initialized empty veb repository at ~/test/scratch/local
+
+    palladium:local spydez$ veb commit
+    veb repository at ~/test/scratch/local 
+    
+    ----------------
+    Committed files:
+    ----------------
+      .DS_Store
+      311/Don't Tread On Me/09 Whiskey & Wine.test.bin
+      311/Don't Tread On Me/10 It's Getting OK Now.test.bin
+      311/Don't Tread On Me/02 Thank Your Lucky Stars.test.bin
+      311/Don't Tread On Me/11 There's Always An Excuse.test.bin
+      Fall Out Boy/Folie À Deux/03 She's My Winona.test.bin
+      Ace Troubleshooter/It's Never Enough/02 Anything.test.bin
+      Fall Out Boy/Folie À Deux/01 Disloyal Order Of Water Buffaloes.test.bin
+      311/Don't Tread On Me/01 Don't Tread On Me.test.bin
+      Apt° Core/2/01 No Such Thing As Time.test.bin
+      Ace Troubleshooter/It's Never Enough/01 Ball & Chain.test.bin
+      Fall Out Boy/Folie À Deux/02 I Don't Care.test.bin
+      Fall Out Boy/Folie À Deux/04 America's Suitehearts.test.bin
+      Five Iron Frenzy/Our Newest Album Ever!/01 Handbook for the Sellout.test.bin
+      Fall Out Boy/Folie À Deux/05 Headfirst Slide Into Cooperstown On A Bad Bet.test.bin
+      Five Iron Frenzy/Our Newest Album Ever!/11 Oh, Canada.test.bin
+      Movits!/Äppelknyckarjazz/01 Ta på dig dansskorna.test.bin
+      Five Iron Frenzy/Our Newest Album Ever!/02 Where is Micah_.test.bin
+      Five Iron Frenzy/Our Newest Album Ever!/13 Every New Day.test.bin
+      Five Iron Frenzy/Our Newest Album Ever!/12 Most Likely to Succeed.test.bin
+      Movits!/Äppelknyckarjazz/06 Fel del av gården.test.bin
+      Movits!/Äppelknyckarjazz/03 Swing för hyresgästföreningen.test.bin
+      Movits!/Äppelknyckarjazz/04 Fast tvärtom.test.bin
+      Movits!/Äppelknyckarjazz/08 Tom Jones.test.bin
+      Movits!/Äppelknyckarjazz/09 Äppelknyckarjazz.test.bin
+      Movits!/Äppelknyckarjazz/11 2 dollar på fickan.test.bin
+      bar.txt
+      foo.txt
+      Movits!/Äppelknyckarjazz/10 Stick iväg Jack del II.test.bin
+      Parov Stelar/Coco Pt.1/01 Coco (Featuring Lilja Bloom).test.bin
+      Parov Stelar/Coco Pt.2/03 Silent Snow(Featuring Max The Sax).test.bin
+      Parov Stelar/Coco Pt.2/02 Ragtime Cat(Featuring Lilja Bloom).test.bin
+      Parov Stelar/Coco Pt.2/01 The Mojo Radio Gang(Radio Ver.).test.bin
+      Parov Stelar/Coco Pt.1/02 Hurt.test.bin
+      Trans-Siberian Orchestra/Christmas Eve and Other Stories/05 The Silent Nutcracker (Instrumental).test.bin
+      Parov Stelar/Coco Pt.1/03 For Rose(수원 아이파크 시티 CF삽입곡).test.bin
+      Parov Stelar/Coco Pt.2/04 Libella Swing(현대카드 TV CF 삽입곡).test.bin
+      Trans-Siberian Orchestra/Christmas Eve and Other Stories/06 A Mad Russian's Christmas (Instrumental).test.bin
+      Trans-Siberian Orchestra/Christmas Eve and Other Stories/02 O Come All Ye Faithful_O Holy Night (instrumental).test.bin
+    
+    summary: 39 commits, 0 errors in 1.553082s
+
+    palladium:local spydez$ mkdir ../remote
+    palladium:local spydez$ cd ../remote
+
+    palladium:remote spydez$ veb init
+    Initialized empty veb repository at ~/test/scratch/remote
+
+    palladium:remote spydez$ cd ../local
+
+    palladium:local spydez$ veb remote ../remote
+    veb repository at ~/test/scratch/local 
+    
+    veb added ~/test/scratch/remote as the remote
+
+    palladium:local spydez$ veb push
+    veb repository at ~/test/scratch/local 
+    
+                                                                                    
+    -------------
+    Pushed files:
+    -------------
+      311/Don't Tread On Me/10 It's Getting OK Now.test.bin                         
+      Movits!/Äppelknyckarjazz/09 Äppelknyckarjazz.test.bin                         
+      Fall Out Boy/Folie À Deux/02 I Don't Care.test.bin                            
+      foo.txt                                                                       
+      Parov Stelar/Coco Pt.1/03 For Rose(수원 아이파크 시티 CF삽입곡).test.bin      
+      Ace Troubleshooter/It's Never Enough/02 Anything.test.bin                     
+      Fall Out Boy/Folie À Deux/04 America's Suitehearts.test.bin                   
+      Parov Stelar/Coco Pt.2/03 Silent Snow(Featuring Max The Sax).test.bin         
+      Fall Out Boy/Folie À Deux/05 Headfirst Slide Into Cooperstown On A Bad Bet.test.bin
+      bar.txt                                                                       
+      Movits!/Äppelknyckarjazz/06 Fel del av gården.test.bin                        
+      Trans-Siberian Orchestra/Christmas Eve and Other Stories/02 O Come All Ye Faithful_O Holy Night (instrumental).test.bin
+      Fall Out Boy/Folie À Deux/01 Disloyal Order Of Water Buffaloes.test.bin       
+      Fall Out Boy/Folie À Deux/03 She's My Winona.test.bin                         
+      Parov Stelar/Coco Pt.1/02 Hurt.test.bin                                       
+      Five Iron Frenzy/Our Newest Album Ever!/02 Where is Micah_.test.bin           
+      .DS_Store                                                                     
+      Ace Troubleshooter/It's Never Enough/01 Ball & Chain.test.bin                 
+      Five Iron Frenzy/Our Newest Album Ever!/13 Every New Day.test.bin             
+      Parov Stelar/Coco Pt.2/04 Libella Swing(현대카드 TV CF 삽입곡).test.bin       
+      Movits!/Äppelknyckarjazz/03 Swing för hyresgästföreningen.test.bin            
+      Five Iron Frenzy/Our Newest Album Ever!/12 Most Likely to Succeed.test.bin    
+      Movits!/Äppelknyckarjazz/10 Stick iväg Jack del II.test.bin                   
+      Movits!/Äppelknyckarjazz/04 Fast tvärtom.test.bin                             
+      Five Iron Frenzy/Our Newest Album Ever!/11 Oh, Canada.test.bin                
+      311/Don't Tread On Me/02 Thank Your Lucky Stars.test.bin                      
+      Movits!/Äppelknyckarjazz/01 Ta på dig dansskorna.test.bin                     
+      Trans-Siberian Orchestra/Christmas Eve and Other Stories/05 The Silent Nutcracker (Instrumental).test.bin
+      Apt° Core/2/01 No Such Thing As Time.test.bin                                 
+      Trans-Siberian Orchestra/Christmas Eve and Other Stories/06 A Mad Russian's Christmas (Instrumental).test.bin
+      311/Don't Tread On Me/11 There's Always An Excuse.test.bin                    
+      Five Iron Frenzy/Our Newest Album Ever!/01 Handbook for the Sellout.test.bin  
+      311/Don't Tread On Me/01 Don't Tread On Me.test.bin                           
+      Movits!/Äppelknyckarjazz/08 Tom Jones.test.bin                                
+      Parov Stelar/Coco Pt.1/01 Coco (Featuring Lilja Bloom).test.bin               
+      Parov Stelar/Coco Pt.2/01 The Mojo Radio Gang(Radio Ver.).test.bin            
+      311/Don't Tread On Me/09 Whiskey & Wine.test.bin                              
+      Parov Stelar/Coco Pt.2/02 Ragtime Cat(Featuring Lilja Bloom).test.bin         
+      Movits!/Äppelknyckarjazz/11 2 dollar på fickan.test.bin                       
+                                                                                    
+    status:    0 ignored,    0 errors,   39 pushed,    0 unchanged in 5.383501s
+
+    palladium:local spydez$ touch bar.txt 
+    palladium:local spydez$ echo foo > foo.txt
+
+    palladium:local spydez$ veb status
+    veb repository at ~/test/scratch/local 
+    
+    --------------
+    Changed files:
+    --------------
+      bar.txt
+          - modified on (2012-05-21 23:31:47 -0500 CDT)
+    
+      foo.txt
+          - filesize increased 4.00B (0.00B -> 4.00B)
+          - modified on (2012-05-21 23:32:02 -0500 CDT)
+    
+    
+    MAKE SURE CHANGED FILES ARE THINGS YOU'VE ACTUALLY CHANGED
+      (use 'veb fix <file>' if a file has been corrupted in this repository)
+      (use 'veb push', 'veb pull', or 'veb sync' to commit changed/new files)
+    
+    summary: 0 new, 2 changed (2.647ms)
+
+    palladium:local spydez$ veb push
+    veb repository at ~/test/scratch/local 
+    
+    use 'veb status' to check new/changed files
+    use 'veb commit' to add new/changed files to repository
+    
+    --------------------
+    LOCAL ignored files:
+    --------------------
+      bar.txt
+      foo.txt
+                                                                                    
+    status:    2 ignored,    0 errors,    0 pushed,   37 unchanged in 10.196ms
+
+    palladium:local spydez$ veb commit
+    veb repository at ~/test/scratch/local 
+    
+    ----------------
+    Committed files:
+    ----------------
+      bar.txt
+      foo.txt
+    
+    summary: 2 commits, 0 errors in 3.222ms
+
+    palladium:local spydez$ veb push
+    veb repository at ~/test/scratch/local 
+    
+                                                                                    
+    -------------
+    Pushed files:
+    -------------
+      foo.txt                                                                       
+                                                                                    
+    status:    0 ignored,    0 errors,    1 pushed,   38 unchanged in 4.626ms
 
 * SLOC
   - Cheesy version

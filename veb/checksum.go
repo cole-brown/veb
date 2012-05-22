@@ -1,5 +1,9 @@
-// hashing files!
- 
+// Copyright 2012 The veb Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+// checksums the given entry
+
 package veb
 
 import (
@@ -30,7 +34,6 @@ func Xsum(entry *IndexEntry, log *Log) error {
 		log.Err().Println(err)
 		return err
 	}
-	// TODO: check file size to make sure all read?
 
 	entry.Xsum = hasher.Sum(nil)
 
@@ -44,9 +47,4 @@ func XsumString(entry *IndexEntry) string {
 
 // TODO
 //  - hashing options!
-//    - make a classy thingy 
-//  - statistics!
-//    - time, etc
-// - non-main!
-// - unit test!
-// - better errors!
+//  - unit test!

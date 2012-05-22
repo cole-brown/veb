@@ -1,3 +1,9 @@
+// Copyright 2012 The veb Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+// simple extension of log.Logger for multiple prefixes
+
 package veb
 
 import (
@@ -22,6 +28,8 @@ type Log struct {
 func NewLog(log *log.Logger) *Log {
 	return &Log{log}
 }
+
+// TODO: Mutex or something to make these multi-goroutine safe
 
 func (l *Log) Err() *Log {
 	l.SetPrefix(P_ERR)

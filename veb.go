@@ -1,8 +1,52 @@
-// veb commands
-//
-// valid commands are:
-//   init
+// Copyright 2012 The veb Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
 
+/* 
+veb: VErified (simple) Backups
+
+Veb is styled after git, but is used for large files and/or files that
+do not really need version controlling, only backing up.
+
+Examples:
+  - music
+  - virtual machines
+  - movies
+  - pictures
+
+Veb was built out of an unhealthy fear of evil hard drives and silent file
+corruption. You have 10GB of pictures, 50GB of music, 1TB of movies. How do you
+know a sector somewhere on you 10 year old hard drive hasn't gone wonky and
+corrupted something? How do you know you didn't accidentally overwrite (or
+delete) those pictures from 3 years ago? Veb gives you some tools to help.
+
+Veb tracks files via mod time, size, etc. in order to quickly determine what has
+changed. 'veb status' will quickly show these changes. 
+
+Veb also keeps a checksum of every file as it is added to the veb
+repository. 'veb verify' will re-check every file to see if something's contents
+been silently changed. Verification could take some time... It has to read
+everything in the repository, so if the repository is 1TB, you may want to go do
+something else while veb does the math.
+
+What veb won't do is read your mind. You'll have to remember what files you've
+changed so when you run 'veb status' or 'veb verify', you can parse the results
+and fix or commit as needed.
+
+veb commands:
+  init   - initializes a new veb repository at the current directory
+  status - quick check of what's new or changed, no recomputing of checksums
+  verify - slow check of all files, recomputing all checksums
+  commit - blesses all new/changed files as good & adds them to the repository
+  remote - sets the backup location for this repository
+  push   - sends committed files in current (local) repository to remote repo
+           only sends files the remote doesn't have the latest of
+  pull   - gets committed files from remote repo
+           only gets files the local repo doesn't have the latest of
+  sync   - veb pull & veb push
+  fix    - pulls the specified file from the remote, overwriting the local copy
+  help   - prints help
+*/
 package main
 
 import (
@@ -37,6 +81,7 @@ const (
 	CHAN_SIZE = 1000
 	INDENT_F = " " // use with Println == 2 spaces
 	INDENT_I = "      -"
+	VERSION  = 0.1
 )
 
 var (
