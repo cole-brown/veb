@@ -12,21 +12,22 @@ import (
 	"fmt"
 )
 
-func Xsum(entry *IndexEntry, logs *Logs) error {
+// TODO: take in root string
+func Xsum(entry *IndexEntry, log *Log) error {
 	// TODO: make hasher from supplied crypto.Hash
 	// - crypto.Available(), crypto.New()
 	hasher := sha1.New()
 
 	file, err := os.Open(entry.Path)
 	if err != nil {
-		logs.Err.Println(err)
+		log.Err().Println(err)
 		return err
 	}
 	defer file.Close()
 
 	_, err = io.Copy(hasher, file)
 	if err != nil {
-		logs.Err.Println(err)
+		log.Err().Println(err)
 		return err
 	}
 	// TODO: check file size to make sure all read?

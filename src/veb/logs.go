@@ -2,34 +2,47 @@ package veb
 
 import (
 	"log"
-	"os"
 )
 
 const (
 	// debug help
 	IN_FUNC  = "ENTERING"
 	OUT_FUNC = "LEAVING "
+
+	// prefixes
+	P_ERR = "error >> "
+	P_WRN = "warn  >> "
+	P_IFO = "info  >> "
 )
 
-type Logs struct {
-	Err  *log.Logger // error-level logging
-	Warn *log.Logger // warning-level logging
-	Info *log.Logger // info-level logging
+type Log struct {
+	*log.Logger
 }
 
-func NewLogs() *Logs {
-	ret := Logs{
-		log.New(os.Stderr, "error >> ", log.LstdFlags|log.Lshortfile),
-		log.New(os.Stderr, "warn  >> ", log.LstdFlags|log.Lshortfile),
-		log.New(os.Stderr, "info  >> ", log.LstdFlags|log.Lshortfile)}
-	return &ret
+func NewLog(log *log.Logger) *Log {
+	return &Log{log}
 }
 
-func (l *Logs) Trace(s string) string {
-	l.Info.Println(IN_FUNC, s)
+func (l *Log) Err() *Log {
+	l.SetPrefix(P_ERR)
+	return l
+}
+
+func (l *Log) Warn() *Log {
+	l.SetPrefix(P_WRN)
+	return l
+}
+
+func (l *Log) Info() *Log {
+	l.SetPrefix(P_IFO)
+	return l
+}
+
+func (l *Log) Trace(s string) string {
+	l.Info().Println(IN_FUNC, s)
 	return s
 }
 
-func (l *Logs) Un(s string) {
-	l.Info.Println(OUT_FUNC, s)
+func (l *Log) Un(s string) {
+	l.Info().Println(OUT_FUNC, s)
 }

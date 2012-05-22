@@ -11,6 +11,24 @@ enough for two 82-width buffers
 
 http://www.gnu.org/software/emacs/manual/html_node/org/Clocking-work-time.html
 
+* Go links
+
+ - A Tour of Go
+   - http://tour.golang.org/#1
+   - http://127.0.0.1:3999 (gotta run gotour from cmd line first)
+
+ - Effective Go
+   - http://golang.org/doc/effective_go.html
+   - lots of useful info about most everything there
+
+ - packages
+   - http://golang.org/pkg/
+   - docs & source
+
+ - Gob
+   - http://blog.golang.org/2011/03/gobs-of-data.html
+   - http://golang.org/pkg/encoding/gob/#Register
+
 * Mysteries of Go
 Don't have two mains inside a package.
 
@@ -723,6 +741,20 @@ for getting a good version of a corrupted file from the remote
 
 veb fix path/to/file.bin
 
+***** commit again
+
+Turns out I probably want a commit. For when the backup exists already.
+local-dir$ veb init
+local-dir$ cd remotedir
+remotedir$ veb init
+remotedir$ veb commit
+remotedir$ cd local-dir
+local-dir$ veb remote remotedir
+local-dir$ veb push
+
+Or maybe have push not just check for new stuff? Maybe force commit, then push
+ala git's flow.
+
 ***** commit/push/pull/sync
 copies files to backup location
 
@@ -736,6 +768,13 @@ Probably don't use "commit". This is more like git's push/pull.
 metadata dir, index file name, xsum file name
 log
 currently in index.go and cmd.go
+
+*** 016: clean deleted files out of index
+*** 017: FINALS [0/4]
+  - [ ] clean up
+  - [ ] write README
+  - [ ] go install, test the bin.
+  - [ ] 
 
 *** 999: update commands: remote
 make veb remote more like git remote
