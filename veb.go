@@ -142,12 +142,13 @@ func main() {
 
 	// setup goroutine parallization
 	// cuz it just runs on one processor out of the box...
-	// TODO: is running on all procs a good idea? (will it starve the system?)
 	NUM_CPUS := runtime.NumCPU()
 	runtime.GOMAXPROCS(NUM_CPUS)
 	MAX_HANDLERS = NUM_CPUS
 	if NUM_CPUS > 4 {
-		// TODO: this needed? Or will running at a nice priority be sufficient?
+		// TODO: is running on all procs a good idea? (will it starve the system?)
+		// using half for now
+		// probably go back to all when niced.
 		MAX_HANDLERS /= 2
 	}
 
@@ -248,7 +249,8 @@ func main() {
 }
 
 // creates veb's META_FOLDER in current directory and empty veb metadata 
-// files inside META_FOLDER
+// files inside META_FOLDER.
+// Does not create LOG_FILE.
 func Init() error {
 	// create veb dir
 	err := os.Mkdir(path.Join(veb.META_FOLDER), 0755)
@@ -280,37 +282,9 @@ func Init() error {
 	return nil
 }
 
-// Check for updated/new files in repo, then nicely print out results in 
-// the following format:
-//
-//    veb repository at /path/to/here
-//  
-//    --------------
-//    Changed files:
-//    --------------
-//      foo/bar/baz.bin
-//          - filesize increased 400 bytes (90.3MB -> 90.3MB)
-//          - modified on (2012-05-19 16:11:05)
-//  
-//      foo/quux.mp3  
-//          - modification time only (2012-05-19 16:11:05)
-//  
-//      
-//    ----------
-//    New files:
-//    ----------
-//      xyzzy.iso  
-//          - 8.9GB, modified on (2012-05-19 16:11:05)
-//  
-//      firefly.m4v
-//          - 80MB, modified on (2012-05-19 16:11:05)
-//  
-//    MAKE SURE CHANGED FILES ARE THINGS YOU'VE ACTUALLY CHANGED
-//      (use "veb fix <file>" if a file has been corrupted in this repository)
-//      (use "veb push", "veb pull", or "veb sync" to commit changed/new files)
-//
-// Format may seem a litte overly whitespaced, but when large amounts of files
-// are present (and/or long path/file names), the space is nice.
+// Check for updated/new files in repo, then nicely print out results.
+// Doesn't check file content (that's saved for verify). This is just 
+// to /quickly/ find new or modified files via file.Lstat().
 func Status(index *veb.Index, log *veb.Log) error {
 	defer log.Un(log.Trace(STATUS))
 	var timer veb.Timer
@@ -388,7 +362,9 @@ func Status(index *veb.Index, log *veb.Log) error {
 
 				sanity := false
 
-				// print size change
+				// print size change 
+				// e.g.
+				//     - filesize decreased 4.00MB (6.02GB -> 6.01GB)
 				if sizeChange != 0 {
 					fmt.Printf("%s filesize %s %s (%s -> %s)\n",
 						INDENT_I, direction, sizeChange, prevSize, curSize)
@@ -438,6 +414,9 @@ func Status(index *veb.Index, log *veb.Log) error {
 // Runs every file in index through hashing algorithm and compares the result
 // against the xsum saved in the index.
 // Does not verify new files.
+// Could take a while. It chews through files in parallel, but it'll still take
+// time to go through gigs of data.
+// Allows early quitting by listening for QUIT_RUNE on stdin.
 func Verify(index *veb.Index, log *veb.Log) error {
 	defer log.Un(log.Trace(VERIFY))
 	var timer veb.Timer
@@ -489,12 +468,14 @@ func Verify(index *veb.Index, log *veb.Log) error {
 		quit <- 1
 	}()
 
+	// receive & print info
 	first := true
 	totalFiles := len(index.Files)
 	changedFiles := 0
 	scannedFiles := 0
 verify_receive_loop:
 	for {
+		// TODO: Rework to not need select. Race condition between quit signal and printing all changes.
 		select {
 		case <-quit:
 			// We're done! Either by finishing or user interrupt.
@@ -502,7 +483,7 @@ verify_receive_loop:
 
 		case f := <-changed:
 			// clear status line w/ carriage return & 80 spaces
-			fmt.Println("\r                                                                                ")
+			fmt.Println("\r                                                                                \r")
 
 			// print header once first file is encountered
 			if first {
@@ -514,6 +495,7 @@ verify_receive_loop:
 
 			// TODO
 			//  - move all this to a 'print changed' function?
+			//    - has some in common with Status's printing
 
 			// print file name
 			fmt.Println(INDENT_F, f.Path)
@@ -531,6 +513,8 @@ verify_receive_loop:
 			sanity := false
 			
 			// print size change
+			// e.g.
+			//     - filesize decreased 4.00MB (6.02GB -> 6.01GB)
 			if sizeChange != 0 {
 				fmt.Printf("%s filesize %s %s (%s -> %s)\n",
 					INDENT_I, direction, sizeChange, prevSize, curSize)
@@ -593,7 +577,8 @@ verify_receive_loop:
 	return nil
 }
 
-// Saves all updated/new files to index, so they are available for push/pull
+// Saves all updated/new files to index, so they are available for push/pull.
+// Saves new file stats & current checksum of the file shown as new/changed.
 func Commit(index *veb.Index, log *veb.Log) error {
 	defer log.Un(log.Trace(COMMIT))
 	var timer veb.Timer
@@ -665,7 +650,8 @@ func Commit(index *veb.Index, log *veb.Log) error {
 	return retVal
 }
 
-// sets the remote repository
+// Sets the remote repository for this veb repo.
+// Remote repository must already exist for it to be set.
 func Remote(index *veb.Index, remote string, log *veb.Log) error {
 	defer log.Un(log.Trace(REMOTE))
 	var timer veb.Timer
@@ -725,9 +711,10 @@ func Remote(index *veb.Index, remote string, log *veb.Log) error {
 	return nil
 }
 
-// gather info about new/changed local files, then copies these files
+// Compares local index against remote index, then copies the differing files
 // to the remote location if remote doesn't have same checksum.
-// updates metadata both locally and remotely.
+// Updates remote's index with the new file information after each file success,
+// but doesn't /save/ remote's index to disk until finished.
 func Push(local *veb.Index, log *veb.Log) error {
 	defer log.Un(log.Trace(PUSH))
 	var timer veb.Timer
@@ -769,8 +756,8 @@ func Push(local *veb.Index, log *veb.Log) error {
 			fmt.Println("--------------------")
 			first = false
 		}
-		fmt.Println(INDENT_F, f.Path)
-		locFilter[f.Path] = true
+		fmt.Println(INDENT_F, f.Path) // filename
+		locFilter[f.Path] = true // add to filter
 	}
 	first = true
 	for f := range remIgnore {
@@ -781,8 +768,8 @@ func Push(local *veb.Index, log *veb.Log) error {
 			fmt.Println("---------------------")
 			first = false
 		}
-		fmt.Println(INDENT_F, f.Path)
-		remFilter[f.Path] = true
+		fmt.Println(INDENT_F, f.Path) // filename
+		remFilter[f.Path] = true // add to filter
 	}
 
 	// make list of files to check
@@ -905,7 +892,8 @@ func Push(local *veb.Index, log *veb.Log) error {
 	return retVal
 }
 
-// finds veb META_FOLDER and changes to that directory's parent
+// Finds veb META_FOLDER and changes to that directory's parent.
+// Looks at pwd first, then down one folder at a time for up to MAX_PARENTS folders.
 // returns: 
 //   (dir cd'd to, nil) on success
 //   ("", err) on error
@@ -950,7 +938,9 @@ func cdBaseDir() (string, error) {
 	return dir, nil
 }
 
-// calculates checksum and saves file stats
+// Calculates checksums of item in files chan, then puts file stats & xsum
+// of changed files out on the changed chan.
+// Does not look at file stats to determine change. This is purely about xsums.
 func verifyHandler(root string, files, changed chan veb.IndexEntry, done chan int, log *veb.Log) {
 	for f := range files {
 		// save off old xsum for comparison
@@ -976,8 +966,8 @@ func verifyHandler(root string, files, changed chan veb.IndexEntry, done chan in
 	done <- 1
 }
 
-// pushes new file to remote repository
-// TODO: Don't use Copy. Use rsync. rsync -qa
+// Pushes local committed file that are changed/new to remote repository.
+// TODO: Don't use Copy. Use rsync. 'rsync -qa' perhaps.
 func pushFile(localRoot, remoteRoot string, entry veb.IndexEntry, log *veb.Log) error {
 	// open local file
 	local, err := os.Open(path.Join(localRoot, entry.Path))

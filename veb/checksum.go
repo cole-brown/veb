@@ -16,6 +16,7 @@ import (
 	"fmt"
 )
 
+// checksum of supplied entry is added to the entry itself
 // TODO: take in root string
 func Xsum(entry *IndexEntry, log *Log) error {
 	// TODO: make hasher from supplied crypto.Hash
@@ -40,8 +41,9 @@ func Xsum(entry *IndexEntry, log *Log) error {
 	return err
 }
 
+// returns xsum in shasum formatted string (<ASCII hex hash> <filepath>)
 func XsumString(entry *IndexEntry) string {
-	// shasum format:
+	// shasum format
 	return fmt.Sprintf("%x  %s\n", entry.Xsum, entry.Path)
 }
 

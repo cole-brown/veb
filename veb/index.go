@@ -10,7 +10,7 @@
 // called to update the Index with their new checksums and file info.
 //
 // Index is not responsible for checksumming files, and does compute xsusm
-// to determine if a file's changed. It looks at file stats instead.
+// to Check() if a file's changed. It looks at file stats instead.
 
 package veb
 
@@ -61,7 +61,7 @@ func New(hash crypto.Hash, root string) *Index {
 	return &ret
 }
 
-// Reads the index in from the index file, decodes with gob into new Index
+// Reads the index in from the index file, decodes with gob and returns it
 func Load(root string, log *Log) (*Index, error) {
 	// open index file
 	file, err := os.Open(path.Join(root, META_FOLDER, INDEX_FILE))
@@ -95,12 +95,11 @@ func (x *Index) Save() error {
 		path.Join(x.Root, META_FOLDER, INDEX_FILE+"~"))
 	if err != nil {
 		x.log.Warn().Println("could not backup old index:", err)
-		// Don't return error. Only errors if index doesn't exist, which is fine
+		// Don't return error. It's ok that the old one doesn't exist,
 		// becaus we're about to save a new one.
 	}
 
-	// open index file
-	// overwrites if already exists
+	// new index file
 	file, err := os.Create(path.Join(x.Root, META_FOLDER, INDEX_FILE))
 	if err != nil {
 		x.log.Err().Println(err)
@@ -116,13 +115,14 @@ func (x *Index) Save() error {
 		return err
 	}
 
-	// move previous index file to backup file, in case something goes badly.
-	// overwrites previous backup index, if it exists.
+	// move previous xsums file to backup file, in case something goes badly.
+	// overwrites previous backup xsums, if it exists.
 	err = os.Rename(path.Join(x.Root, META_FOLDER, XSUMS_FILE),
 		path.Join(x.Root, META_FOLDER, XSUMS_FILE+"~"))
 	if err != nil {
 		x.log.Warn().Println("could not backup old xsums:", err)
-		// Don't return error. 
+		// Don't return error. It's ok that the old one doesn't exist,
+		// becaus we're about to save a new one.
 	}
 
 	// new xsums file
@@ -142,23 +142,9 @@ func (x *Index) Save() error {
 }
 
 // Checks file stats against stats in the index; does not recompute checksum.
-// If file differs, returns false. 
-// If file does not exist in Index, returns false with an IndexError.
+// Pushed files whose stats differ out to the changed channel.
+// Closes the channel when complete.
 func (x Index) Check(changed chan IndexEntry) error {
-//	// save prev dir
-//	prevDir, err := os.Getwd()
-//	if err != nil {
-//		x.log.Err().Println(err)
-//		return err
-//	}
-//
-//	// cd to root so paths are relative
-//	err = os.Chdir(root)
-//	if err != nil {
-//		x.log.Err().Println(err)
-//		return err
-//	}
-
 	// find changes
 	err := filepath.Walk(x.Root, x.checkWalker(changed))
 	if err != nil {
@@ -166,11 +152,6 @@ func (x Index) Check(changed chan IndexEntry) error {
 	}
 	close(changed)
 
-//	// return to prev dir
-//	err = os.Chdir(prevDir)
-//	if err != nil {
-//		x.log.Err().Println(err)
-//	}
 	return err
 }
 
@@ -191,7 +172,7 @@ func SetStats(root string, entry *IndexEntry) error {
 	return nil
 }
 
-// File has been delt with; update xsum and file stats in Index
+// File has been delt with; update xsum and file stats in Index.
 func (x Index) Update(entry *IndexEntry) error {
 	err := SetStats(x.Root, entry)
 	if err != nil {
