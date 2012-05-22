@@ -16,7 +16,7 @@ import (
 	"path"
 	"runtime"
 	"time"
-	"veb"
+	"veb/veb"
 )
 
 const (
@@ -37,16 +37,10 @@ const (
 	CHAN_SIZE = 1000
 	INDENT_F = " " // use with Println == 2 spaces
 	INDENT_I = "      -"
-
-	// TODO: move somewhere else. Index uses thes too.
-	META_FOLDER = ".veb"
-	INDEX_FILE  = "index" // inside of META_FOLDER only
-	XSUMS_FILE  = "xsums" // inside of META_FOLDER only
-	LOG_FILE    = "log.txt"
 )
 
 var (
-	maxHandlers int
+	MAX_HANDLERS int
 )
 
 // pretty print filesizes
@@ -106,10 +100,10 @@ func main() {
 	// TODO: is running on all procs a good idea? (will it starve the system?)
 	NUM_CPUS := runtime.NumCPU()
 	runtime.GOMAXPROCS(NUM_CPUS)
-	maxHandlers = NUM_CPUS
+	MAX_HANDLERS = NUM_CPUS
 	if NUM_CPUS > 4 {
 		// TODO: this needed? Or will running at a nice priority be sufficient?
-		maxHandlers /= 2
+		MAX_HANDLERS /= 2
 	}
 
 	// sanity check
@@ -138,7 +132,7 @@ func main() {
 	}
 
 	// make the logger
-	logf, err := os.OpenFile(path.Join(root, META_FOLDER, LOG_FILE),
+	logf, err := os.OpenFile(path.Join(root, veb.META_FOLDER, veb.LOG_FILE),
 		os.O_RDWR|os.O_APPEND|os.O_CREATE, 0644)
 	log := veb.NewLog(log.New(logf, "", log.LstdFlags|log.Lshortfile))
 
@@ -212,20 +206,20 @@ func main() {
 // files inside META_FOLDER
 func Init() error {
 	// create veb dir
-	err := os.Mkdir(path.Join(META_FOLDER), 0755)
+	err := os.Mkdir(path.Join(veb.META_FOLDER), 0755)
 	if err != nil {
 		return fmt.Errorf("veb could not create metadata directory: %v", err)
 	}
 
 	// create index file
-	indexf, err := os.Create(path.Join(META_FOLDER, INDEX_FILE))
+	indexf, err := os.Create(path.Join(veb.META_FOLDER, veb.INDEX_FILE))
 	if err != nil {
 		return fmt.Errorf("veb could not create metadata index file: %v", err)
 	}
 	indexf.Close()
 
 	// create xsums file
-	xsums, err := os.Create(path.Join(META_FOLDER, XSUMS_FILE))
+	xsums, err := os.Create(path.Join(veb.META_FOLDER, veb.XSUMS_FILE))
 	if err != nil {
 		return fmt.Errorf("veb could not create metadata xsums file: %v", err)
 	}
@@ -437,14 +431,14 @@ func Verify(index *veb.Index, log *veb.Log) error {
 
 	// start handler pool working on checking files
 	changed := make(chan veb.IndexEntry, CHAN_SIZE)
-	done := make(chan int, maxHandlers)
-	for i := 0; i < maxHandlers; i++ {
+	done := make(chan int, MAX_HANDLERS)
+	for i := 0; i < MAX_HANDLERS; i++ {
 		go verifyHandler(index.Root, files, changed, done, log)
 	}
 
 	// done listener signals quit when all handlers are done
 	go func() {
-		for i := 0; i < maxHandlers; i++ {
+		for i := 0; i < MAX_HANDLERS; i++ {
 			<-done
 		}
 		quit <- 1
@@ -566,8 +560,8 @@ func Commit(index *veb.Index, log *veb.Log) error {
 	
 	// start handler pool working on files
 	updates := make(chan veb.IndexEntry, CHAN_SIZE)
-	done := make(chan int, maxHandlers)
-	for i := 0; i < maxHandlers; i++ {
+	done := make(chan int, MAX_HANDLERS)
+	for i := 0; i < MAX_HANDLERS; i++ {
 		go func() {
 			for f := range files {
 				// calculate checksum hash
@@ -584,7 +578,7 @@ func Commit(index *veb.Index, log *veb.Log) error {
 
 	// done listener
 	go func() {
-		for i := 0; i < maxHandlers; i++ {
+		for i := 0; i < MAX_HANDLERS; i++ {
 			<-done
 		}
 		close(updates)
@@ -594,6 +588,7 @@ func Commit(index *veb.Index, log *veb.Log) error {
 	var retVal error = nil
 	numCommits := 0
 	numErrors := 0
+	first := true
 	for f := range updates {
 		err := index.Update(&f)
 		if err != nil {
@@ -602,7 +597,13 @@ func Commit(index *veb.Index, log *veb.Log) error {
 			retVal = fmt.Errorf("veb commit failed")
 			numErrors++
 		} else {
-			fmt.Println(INDENT_F, "committed", f.Path)
+			if first {
+				fmt.Println("----------------")
+				fmt.Println("Committed files:")
+				fmt.Println("----------------")
+				first = false
+			}
+			fmt.Println(INDENT_F, f.Path)
 			numCommits++
 		}
 	}
@@ -612,7 +613,7 @@ func Commit(index *veb.Index, log *veb.Log) error {
 
 	// info 
 	timer.Stop()
-	fmt.Println("summary:", numCommits, "commits,", numErrors, 
+	fmt.Println("\nsummary:", numCommits, "commits,", numErrors, 
 		"errors in", timer.Duration())
 	log.Info().Printf("%s (%d commits, %d errors) took %v\n",
 		COMMIT, numCommits, numErrors, timer.Duration())
@@ -647,7 +648,7 @@ func Remote(index *veb.Index, remote string, log *veb.Log) error {
 	}
 
 	// check to see if it's a veb repo
-	remoteRepo := path.Join(remote, META_FOLDER)
+	remoteRepo := path.Join(remote, veb.META_FOLDER)
 	fi, err = os.Stat(remoteRepo)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -757,13 +758,13 @@ func Push(local *veb.Index, log *veb.Log) error {
 	}()
 
 	// send files to remote if xsums differ
-	done := make(chan int, maxHandlers)
+	done := make(chan int, MAX_HANDLERS)
 	updates := make(chan veb.IndexEntry, CHAN_SIZE)
 	errored := make(chan veb.IndexEntry, CHAN_SIZE)
 	numErrored := 0
 	numPushed  := 0
 	numNoChange := 0
-	for i := 0; i < maxHandlers; i++ {
+	for i := 0; i < MAX_HANDLERS; i++ {
 		go func() {
 			for f := range files {
 				// compare checksum hashes
@@ -796,7 +797,7 @@ func Push(local *veb.Index, log *veb.Log) error {
 	numListeners := 3
 	quit := make(chan int, numListeners)
 	go func() {
-		for i := 0; i < maxHandlers; i++ {
+		for i := 0; i < MAX_HANDLERS; i++ {
 			<-done
 		}
 		close(updates)
@@ -822,7 +823,7 @@ func Push(local *veb.Index, log *veb.Log) error {
 			if first {
 				fmt.Printf("%s%s\n%s\n%s\n",
 					"\r                                                                                \r",
-					"-------------",
+					"\n-------------",
 					"Pushed files:",
 					"-------------")
 				first = false
@@ -875,12 +876,12 @@ func cdBaseDir() (string, error) {
 	found := false
 	for i := 0; i < MAX_PARENTS; i++ {
 		// check current
-		fi, err := os.Stat(path.Join(dir, META_FOLDER))
+		fi, err := os.Stat(path.Join(dir, veb.META_FOLDER))
 		if err != nil {
 			// If the dir doesn't exist, fine.
 			// Log other errors.
 			if !os.IsNotExist(err) {
-				return "", fmt.Errorf("veb could not find %v metafolder: %v", META_FOLDER, err)
+				return "", fmt.Errorf("veb could not find %v metafolder: %v", veb.META_FOLDER, err)
 			}
 		} else if fi.IsDir() {
 			// dir is now at base directory
@@ -898,7 +899,7 @@ func cdBaseDir() (string, error) {
 
 	if !found {
 		return "", fmt.Errorf("veb could not find %v metafolder at or (up to %v folders) below: %v",
-			META_FOLDER, MAX_PARENTS, pwd)
+			veb.META_FOLDER, MAX_PARENTS, pwd)
 	}
 
 	return dir, nil
@@ -964,6 +965,5 @@ func pushFile(localRoot, remoteRoot string, entry veb.IndexEntry, log *veb.Log) 
 		return err
 	}
 
-	time.Sleep(time.Second)
 	return err
 }

@@ -24,6 +24,7 @@ const (
 	META_FOLDER = ".veb"
 	INDEX_FILE  = "index" // inside of META_FOLDER only
 	XSUMS_FILE  = "xsums" // inside of META_FOLDER only
+	LOG_FILE    = "log.txt"// inside of META_FOLDER only
 )
 
 // The veb index is a map indexed by relative paths
