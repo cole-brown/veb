@@ -17,6 +17,9 @@ Veb also keeps a checksum of every file as it is added to the veb repository. 'v
 
 What veb won't do is read your mind. You'll have to remember what files you've changed so when you run 'veb status' or 'veb verify', you can parse the results and fix or commit as needed.
 
+### Caveat
+
+Veb is coded & tested on OS X Lion. It probably works on Linux. Cross your fingers if you're on Windows; it probably has 50/50.
 
 ## veb commands:
 
@@ -49,6 +52,7 @@ This is veb v0.1, so a lot is still to come.
 - Choice of hash function: Currently SHA1 is hard-coded. Plan is to allow at least SHA1, SHA256, and MD5 during 'veb init'.
   - MD5 may be useful for people who have huge files (Virtual Machines, for example) and need fast hashing.
 - Testing: Will be added. Have been white-box testing to this point, but need actual test suites going forward.
+  - Testing on Windows. There's one place in the code where "/" is hard-coded. That'll have to go, unless Go makes Windows paths nice and non-backslashed for free.
 - Also, a sprinkling of TODOs in the code need to be TODONE.
 
 ## veb's intended usage

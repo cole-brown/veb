@@ -208,6 +208,7 @@ func (x Index) checkWalker(changed chan IndexEntry) func(path string, info os.Fi
 		}
 
 		// make path relative
+		// TODO: how does Go treat paths on Windows? / or \ as path seperator?
 		path = strings.Replace(path, x.Root+"/", "", 1)
 
 		// compare current file stats against index's stats
