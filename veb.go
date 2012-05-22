@@ -185,6 +185,7 @@ func main() {
 	logf, err := os.OpenFile(path.Join(root, veb.META_FOLDER, veb.LOG_FILE),
 		os.O_RDWR|os.O_APPEND|os.O_CREATE, 0644)
 	log := veb.NewLog(log.New(logf, "", log.LstdFlags|log.Lshortfile))
+	defer log.Info().Println("done\n\n")
 
 	// load the index
 	index, err := veb.Load(root, log)
@@ -248,8 +249,6 @@ func main() {
 		// TODO
 		fmt.Println("INSERT HELP HERE")
 	}
-
-	log.Info().Println("done\n\n")
 }
 
 // creates veb's META_FOLDER in current directory and empty veb metadata 

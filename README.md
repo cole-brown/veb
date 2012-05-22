@@ -97,6 +97,7 @@ log.txt is a plain text file containing info & error logs from all your veb comm
     info  >> 2012/05/21 23:31:05 log.go:42: ENTERING remote
     error >> 2012/05/21 23:31:05 veb.go:655: stat /Users/spydez/sourcepan/go/src/spydez/veb/test/scratch/remote/.veb: no such file or directory
     info  >> 2012/05/21 23:31:05 log.go:47: LEAVING  remote
+
     info  >> 2012/05/21 23:31:30 log.go:42: ENTERING remote
     info  >> 2012/05/21 23:31:30 veb.go:679: remote took 1.499ms
     info  >> 2012/05/21 23:31:30 log.go:47: LEAVING  remote
@@ -104,7 +105,7 @@ log.txt is a plain text file containing info & error logs from all your veb comm
 
 The .veb folder, and everything in it, are ignored by veb commands. It does copy index and xsums to index~ and xsums~ before writing new ones, for some rudimentary self-backing up.
 
-## A short veb unguided tour
+## A short, unguided veb tour
     palladium:scratch spydez$ cd local
 
     palladium:local spydez$ veb init
